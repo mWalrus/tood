@@ -3,7 +3,7 @@ use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use std::io;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
-use tui::style::{Color, Modifier, Style};
+use tui::style::{Color, Style};
 use tui::text::Spans;
 use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use tui::{Frame, Terminal};
@@ -62,7 +62,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .iter()
                 .map(|i| {
                     let finished = if i.finished { "[x] " } else { "[ ] " };
-                    let line = finished.to_string() + &i.name.as_ref();
+                    let line = finished.to_string() + i.name.as_ref();
                     let line = vec![Spans::from(line)];
                     ListItem::new(line).style(Style::default())
                 })

@@ -1,5 +1,4 @@
 use anyhow::Result;
-use dirs_next as dirs;
 use serde::{Deserialize, Serialize};
 use tui::widgets::ListState;
 
@@ -34,7 +33,7 @@ impl Todo {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum Field {
     Name,
     Description,
