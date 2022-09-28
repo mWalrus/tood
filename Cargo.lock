@@ -306,6 +306,7 @@ dependencies = [
  "serde",
  "toml",
  "tui",
+ "tui-input",
 ]
 
 [[package]]
@@ -319,6 +320,15 @@ dependencies = [
  "crossterm",
  "unicode-segmentation",
  "unicode-width",
+]
+
+[[package]]
+name = "tui-input"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8fd9573b9b1940b491977c1877284e36953a8cf4f8836cf5dc82996912485de"
+dependencies = [
+ "crossterm",
 ]
 
 [[package]]

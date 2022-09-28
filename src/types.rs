@@ -1,6 +1,8 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tui::widgets::ListState;
+use tui_input::backend::crossterm as input_backend;
+use tui_input::Input;
 
 use crate::TODO_FILE;
 
@@ -45,6 +47,7 @@ impl Default for Field {
     }
 }
 
+// FIXME!!!!!!: make use of tui_input crate and its features
 pub struct App {
     pub todos: TodoList,
     pub new_todo: Todo,
