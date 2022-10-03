@@ -106,7 +106,7 @@ impl App {
 pub struct TodoList {
     #[serde(skip, default)]
     pub state: ListState,
-    #[serde(default)]
+    #[serde(default, rename(serialize = "todos"))]
     pub todos: Vec<Todo>,
 }
 
