@@ -13,11 +13,9 @@ pub fn run<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         terminal.draw(|f| ui(f, &mut app))?;
 
         if let Event::Key(key) = event::read()? {
-            // println!("Key: {key:#?}");
             match app.mode {
                 InputMode::Normal => match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
-                        app.exit().unwrap();
                         return Ok(());
                     }
                     KeyCode::Up | KeyCode::Char('k') => app.todos.previous(),
@@ -29,17 +27,20 @@ pub fn run<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                 },
                 InputMode::Editing => match key.code {
                     KeyCode::Esc => app.mode = InputMode::Normal,
-                    KeyCode::Char(c) => app.new_todo.push_text(&app.field, c),
-                    KeyCode::Backspace => app.new_todo.pop(&app.field),
-                    KeyCode::Enter if key.modifiers == KeyModifiers::ALT => match app.field {
-                        Field::Name => app.field = Field::Description,
-                        Field::Description => app.add_todo(),
-                    },
+                    KeyCode::Char('s')
+                        if key.modifiers == KeyModifiers::CONTROL
+                            && app.field == Field::Description =>
+                    {
+                        match app.field {
+                            Field::Name => app.field = Field::Description,
+                            Field::Description => app.add_todo(),
+                        }
+                    }
                     KeyCode::Enter => match app.field {
                         Field::Name => app.field = Field::Description,
                         Field::Description => {} // do nothing since we want new lines
                     },
-                    _ => {}
+                    _ => app.handle_input_event(key),
                 },
             }
         }
@@ -94,16 +95,41 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 )
                 .split(f.size());
 
-            let name = Paragraph::new(&*app.new_todo.name)
-                .style(Style::default())
+            let name_input = &app.new_todo.name;
+            let width = chunks[1].width.max(3) - 3;
+            let scroll = (name_input.cursor() as u16).max(width) - width;
+            let name_input = Paragraph::new(name_input.value())
+                .style(match app.field {
+                    Field::Name => Style::default().fg(Color::Blue),
+                    Field::Description => Style::default(),
+                })
+                .scroll((0, scroll))
                 .block(Block::default().borders(Borders::ALL).title("Name"));
 
-            let desc = Paragraph::new(&*app.new_todo.description)
-                .wrap(tui::widgets::Wrap { trim: true })
+            let desc_input = &app.new_todo.description;
+            let width = chunks[2].width.max(3) - 3;
+            let scroll = (desc_input.cursor() as u16).max(width) - width;
+            let desc_input = Paragraph::new(desc_input.value())
+                .style(match app.field {
+                    Field::Description => Style::default().fg(Color::Blue),
+                    Field::Name => Style::default(),
+                })
+                .scroll((0, scroll))
                 .block(Block::default().borders(Borders::ALL).title("Description"));
 
-            f.render_widget(name, chunks[1]);
-            f.render_widget(desc, chunks[2]);
+            f.render_widget(name_input, chunks[1]);
+            f.render_widget(desc_input, chunks[2]);
+
+            match app.field {
+                Field::Name => f.set_cursor(
+                    chunks[1].x + (app.new_todo.name.cursor() as u16).min(width) + 1,
+                    chunks[1].y + 1,
+                ),
+                Field::Description => f.set_cursor(
+                    chunks[2].x + (app.new_todo.description.cursor() as u16).min(width) + 1,
+                    chunks[2].y + 1,
+                ),
+            }
         }
     }
 }

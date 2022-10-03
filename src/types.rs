@@ -1,38 +1,19 @@
 use anyhow::Result;
+use crossterm::event::{Event, KeyEvent};
 use serde::{Deserialize, Serialize};
+use toml::Value;
 use tui::widgets::ListState;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 
 use crate::TODO_FILE;
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {
-    #[serde(default = "finished_default")]
+    #[serde(default)]
     pub finished: bool,
     pub name: String,
     pub description: String,
-}
-
-#[inline(always)]
-fn finished_default() -> bool {
-    false
-}
-
-impl Todo {
-    pub fn push_text(&mut self, field: &Field, c: char) {
-        match field {
-            Field::Name => self.name.push(c),
-            Field::Description => self.description.push(c),
-        }
-    }
-
-    pub fn pop(&mut self, field: &Field) {
-        match field {
-            Field::Name => self.name.pop(),
-            Field::Description => self.description.pop(),
-        };
-    }
 }
 
 #[derive(PartialEq, Eq)]
@@ -47,12 +28,17 @@ impl Default for Field {
     }
 }
 
-// FIXME!!!!!!: make use of tui_input crate and its features
 pub struct App {
     pub todos: TodoList,
-    pub new_todo: Todo,
+    pub new_todo: TodoInput,
     pub field: Field,
     pub mode: InputMode,
+}
+
+#[derive(Default)]
+pub struct TodoInput {
+    pub name: Input,
+    pub description: Input,
 }
 
 pub enum InputMode {
@@ -64,7 +50,7 @@ impl Default for App {
     fn default() -> App {
         App {
             todos: TodoList::load(),
-            new_todo: Todo::default(),
+            new_todo: TodoInput::default(),
             field: Field::Name,
             mode: InputMode::Normal,
         }
@@ -85,7 +71,7 @@ impl App {
         }
     }
 
-    pub fn exit(&self) -> Result<()> {
+    pub fn save_to_disk(&self) -> Result<()> {
         // FIXME: saving fails because the array fields
         //        have no name, therefore the deser cant
         //        populate the TodoList with the todos
@@ -94,30 +80,48 @@ impl App {
         Ok(())
     }
 
+    pub fn handle_input_event(&mut self, e: KeyEvent) {
+        input_backend::to_input_request(Event::Key(e)).and_then(|r| match self.field {
+            Field::Name => self.new_todo.name.handle(r),
+            Field::Description => self.new_todo.description.handle(r),
+        });
+    }
+
     pub fn add_todo(&mut self) {
-        self.todos.add_todo(self.new_todo.clone());
+        self.todos.add_todo(&self.new_todo);
         self.field = Field::Name;
         self.mode = InputMode::Normal;
-        self.new_todo = Todo::default();
+        // reset input fields
+        self.new_todo.name.reset();
+        self.new_todo.description.reset();
+        self.save_to_disk().unwrap();
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct TodoList {
     #[serde(skip, default)]
     pub state: ListState,
-    #[serde(default, rename(serialize = "todos"))]
+    #[serde(default, rename(serialize = "todos", deserialize = "todos"))]
     pub todos: Vec<Todo>,
 }
 
 impl TodoList {
     pub fn load() -> TodoList {
+        // FIXME: what the fuck!!!!
         let todos_string = std::fs::read_to_string(&*TODO_FILE).unwrap();
-        let mut todos: TodoList = toml::from_str(&todos_string).unwrap();
-        if !todos.todos.is_empty() {
-            todos.state.select(Some(0));
+        println!("{todos_string}");
+        let mut todos: Value = toml::from_str(&todos_string).unwrap();
+        println!("{todos:#?}");
+        std::process::exit(0);
+        // if !todos.todos.is_empty() {
+        //     todos.state.select(Some(0));
+        // }
+        // todos
+        TodoList {
+            state: ListState::default(),
+            todos: Vec::new(),
         }
-        todos
     }
 
     pub fn next(&mut self) {
@@ -164,8 +168,13 @@ impl TodoList {
         }
     }
 
-    pub fn add_todo(&mut self, item: Todo) {
-        self.todos.push(item);
+    pub fn add_todo(&mut self, item: &TodoInput) {
+        let new_todo = Todo {
+            finished: false,
+            name: item.name.value().into(),
+            description: item.description.value().into(),
+        };
+        self.todos.push(new_todo);
         if self.state.selected().is_none() {
             self.state.select(Some(0))
         }
