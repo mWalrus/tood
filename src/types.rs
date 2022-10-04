@@ -1,12 +1,11 @@
 use anyhow::Result;
 use crossterm::event::{Event, KeyEvent};
 use serde::{Deserialize, Serialize};
-use toml::Value;
 use tui::widgets::ListState;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 
-use crate::TODO_FILE;
+use crate::keymap::ToodKeyList;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {
@@ -16,29 +15,17 @@ pub struct Todo {
     pub description: String,
 }
 
-#[derive(PartialEq, Eq)]
-pub enum Field {
-    Name,
-    Description,
-}
-
-impl Default for Field {
-    fn default() -> Field {
-        Field::Name
-    }
-}
-
 pub struct App {
     pub todos: TodoList,
     pub new_todo: TodoInput,
-    pub field: Field,
+    pub keys: ToodKeyList,
     pub mode: InputMode,
 }
 
 #[derive(Default)]
 pub struct TodoInput {
     pub name: Input,
-    pub description: Input,
+    pub description: String,
 }
 
 pub enum InputMode {
@@ -51,7 +38,7 @@ impl Default for App {
         App {
             todos: TodoList::load(),
             new_todo: TodoInput::default(),
-            field: Field::Name,
+            keys: ToodKeyList::default(),
             mode: InputMode::Normal,
         }
     }
@@ -61,6 +48,7 @@ impl App {
     pub fn remove_current_todo(&mut self) {
         self.todos.remove_current();
         self.todos.check_selection();
+        self.save_to_disk().unwrap();
     }
 
     pub fn get_current_description(&self) -> &str {
@@ -72,33 +60,38 @@ impl App {
     }
 
     pub fn save_to_disk(&self) -> Result<()> {
-        // FIXME: saving fails because the array fields
-        //        have no name, therefore the deser cant
-        //        populate the TodoList with the todos
-        let toml = toml::to_string(&self.todos)?;
-        std::fs::write(&*TODO_FILE, toml)?;
+        confy::store("tood", Some("todos.toml"), &self.todos).unwrap();
         Ok(())
     }
 
     pub fn handle_input_event(&mut self, e: KeyEvent) {
-        input_backend::to_input_request(Event::Key(e)).and_then(|r| match self.field {
-            Field::Name => self.new_todo.name.handle(r),
-            Field::Description => self.new_todo.description.handle(r),
-        });
+        input_backend::to_input_request(Event::Key(e)).and_then(|r| self.new_todo.name.handle(r));
+    }
+
+    pub fn edit_description(&mut self) {
+        let desc = edit::edit(&self.new_todo.description).unwrap();
+        self.new_todo.description = desc;
+    }
+
+    pub fn toggle_todo_completed(&mut self) {
+        self.todos.toggle_completed();
+        self.save_to_disk().unwrap();
     }
 
     pub fn add_todo(&mut self) {
         self.todos.add_todo(&self.new_todo);
-        self.field = Field::Name;
-        self.mode = InputMode::Normal;
-        // reset input fields
-        self.new_todo.name.reset();
-        self.new_todo.description.reset();
+        self.reset_state();
         self.save_to_disk().unwrap();
+    }
+
+    pub fn reset_state(&mut self) {
+        self.mode = InputMode::Normal;
+        self.new_todo.name.reset();
+        self.new_todo.description = String::new();
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct TodoList {
     #[serde(skip, default)]
     pub state: ListState,
@@ -108,20 +101,11 @@ pub struct TodoList {
 
 impl TodoList {
     pub fn load() -> TodoList {
-        // FIXME: what the fuck!!!!
-        let todos_string = std::fs::read_to_string(&*TODO_FILE).unwrap();
-        println!("{todos_string}");
-        let mut todos: Value = toml::from_str(&todos_string).unwrap();
-        println!("{todos:#?}");
-        std::process::exit(0);
-        // if !todos.todos.is_empty() {
-        //     todos.state.select(Some(0));
-        // }
-        // todos
-        TodoList {
-            state: ListState::default(),
-            todos: Vec::new(),
+        let mut todo_list: TodoList = confy::load("tood", Some("todos.toml")).unwrap();
+        if !todo_list.todos.is_empty() {
+            todo_list.state.select(Some(0));
         }
+        todo_list
     }
 
     pub fn next(&mut self) {
@@ -158,7 +142,8 @@ impl TodoList {
         } else if self.todos.len() == 1 {
             self.state.select(Some(0));
         } else {
-            self.state.select(Some(self.state.selected().unwrap() - 1));
+            let new_selection = self.state.selected().unwrap().checked_sub(1).unwrap_or(0);
+            self.state.select(Some(new_selection));
         }
     }
 
@@ -172,7 +157,7 @@ impl TodoList {
         let new_todo = Todo {
             finished: false,
             name: item.name.value().into(),
-            description: item.description.value().into(),
+            description: item.description.clone(),
         };
         self.todos.push(new_todo);
         if self.state.selected().is_none() {

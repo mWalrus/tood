@@ -1,47 +1,55 @@
-use crate::types::{App, Field, InputMode};
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
-use std::io;
-use tui::backend::Backend;
-use tui::layout::{Constraint, Layout};
-use tui::style::{Color, Style};
-use tui::text::Spans;
+use crate::keymap::key_match;
+use crate::types::{App, InputMode};
+use crossterm::event::{self, Event};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
+use std::error::Error;
+use std::io::{self, stdout};
+use std::io::{Stdout, Write};
+use tui::backend::{Backend, CrosstermBackend};
+use tui::layout::{Constraint, Layout, Rect};
+use tui::style::{Color, Modifier, Style};
+use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use tui::{Frame, Terminal};
 
-pub fn run<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+pub fn run(mut app: App) -> io::Result<()> {
+    let mut terminal = init_terminal().unwrap();
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
         if let Event::Key(key) = event::read()? {
             match app.mode {
-                InputMode::Normal => match key.code {
-                    KeyCode::Char('q') | KeyCode::Esc => {
+                InputMode::Normal => {
+                    if key_match(&key, &app.keys.quit) {
+                        reset_terminal().unwrap();
                         return Ok(());
+                    } else if key_match(&key, &app.keys.move_up) {
+                        app.todos.previous();
+                    } else if key_match(&key, &app.keys.move_down) {
+                        app.todos.next();
+                    } else if key_match(&key, &app.keys.add_todo) {
+                        app.mode = InputMode::Editing;
+                    } else if key_match(&key, &app.keys.toggle_completed) {
+                        app.toggle_todo_completed();
+                    } else if key_match(&key, &app.keys.remove_todo) {
+                        app.remove_current_todo();
                     }
-                    KeyCode::Up | KeyCode::Char('k') => app.todos.previous(),
-                    KeyCode::Down | KeyCode::Char('j') => app.todos.next(),
-                    KeyCode::Char('a') => app.mode = InputMode::Editing,
-                    KeyCode::Char(' ') => app.todos.toggle_completed(),
-                    KeyCode::Char('d') => app.remove_current_todo(),
-                    _ => {}
-                },
-                InputMode::Editing => match key.code {
-                    KeyCode::Esc => app.mode = InputMode::Normal,
-                    KeyCode::Char('s')
-                        if key.modifiers == KeyModifiers::CONTROL
-                            && app.field == Field::Description =>
-                    {
-                        match app.field {
-                            Field::Name => app.field = Field::Description,
-                            Field::Description => app.add_todo(),
-                        }
+                }
+                InputMode::Editing => {
+                    if key_match(&key, &app.keys.back) {
+                        app.reset_state();
+                    } else if key_match(&key, &app.keys.save_new_todo) {
+                        app.add_todo();
+                    } else if key_match(&key, &app.keys.add_description) {
+                        reset_terminal().unwrap();
+                        app.edit_description();
+                        terminal = init_terminal().unwrap();
+                    } else {
+                        app.handle_input_event(key);
                     }
-                    KeyCode::Enter => match app.field {
-                        Field::Name => app.field = Field::Description,
-                        Field::Description => {} // do nothing since we want new lines
-                    },
-                    _ => app.handle_input_event(key),
-                },
+                }
             }
         }
     }
@@ -54,7 +62,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             // TODO: normal todo view
             let chunks = Layout::default()
                 .direction(tui::layout::Direction::Vertical)
-                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .constraints(
+                    [
+                        Constraint::Percentage(60),
+                        Constraint::Min(3),
+                        Constraint::Length(1),
+                    ]
+                    .as_ref(),
+                )
                 .split(f.size());
 
             let list_items: Vec<ListItem> = app
@@ -79,57 +94,126 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .wrap(tui::widgets::Wrap { trim: true })
                 .block(Block::default().borders(Borders::ALL).title("Description"));
             f.render_widget(description, chunks[1]);
+
+            let binds = [
+                ("Up", app.keys.move_up.to_string()),
+                ("Down", app.keys.move_down.to_string()),
+                ("Add", app.keys.add_todo.to_string()),
+                ("Toggle", app.keys.toggle_completed.to_string()),
+                ("Delete", app.keys.remove_todo.to_string()),
+                ("Quit", app.keys.quit.to_string()),
+            ];
+            let mut spans: Vec<Span> = Vec::new();
+            for bind in binds {
+                spans.push(Span::styled(
+                    format!("{} [{}]", bind.0, bind.1),
+                    Style::default()
+                        .bg(Color::Blue)
+                        .add_modifier(Modifier::BOLD),
+                ));
+                // space between hints
+                spans.push(Span::raw(" "));
+            }
+            let bind_bar = Paragraph::new(Spans::from(spans))
+                .wrap(tui::widgets::Wrap { trim: true })
+                .block(Block::default().borders(Borders::NONE));
+            f.render_widget(bind_bar, chunks[2]);
         }
         InputMode::Editing => {
             // TODO: edit todo view
+            let size = f.size();
+
+            let width = size.width / 2;
+            let x = width / 2;
+
+            let height = size.height.min(20);
+
+            let y = if height == size.height { 0 } else { 20 };
+
+            let rect = Rect {
+                x,
+                y,
+                width,
+                height,
+            };
+
             let chunks = Layout::default()
                 .direction(tui::layout::Direction::Vertical)
-                .constraints(
-                    [
-                        Constraint::Percentage(20),
-                        Constraint::Length(3),
-                        Constraint::Min(10),
-                        Constraint::Percentage(20),
-                    ]
-                    .as_ref(),
-                )
-                .split(f.size());
+                .constraints([Constraint::Length(3), Constraint::Max(10)].as_ref())
+                .split(rect);
 
             let name_input = &app.new_todo.name;
-            let width = chunks[1].width.max(3) - 3;
+            let width = chunks[0].width.max(3) - 3;
             let scroll = (name_input.cursor() as u16).max(width) - width;
             let name_input = Paragraph::new(name_input.value())
-                .style(match app.field {
-                    Field::Name => Style::default().fg(Color::Blue),
-                    Field::Description => Style::default(),
-                })
+                .style(Style::default().fg(Color::Blue))
                 .scroll((0, scroll))
                 .block(Block::default().borders(Borders::ALL).title("Name"));
 
-            let desc_input = &app.new_todo.description;
-            let width = chunks[2].width.max(3) - 3;
-            let scroll = (desc_input.cursor() as u16).max(width) - width;
-            let desc_input = Paragraph::new(desc_input.value())
-                .style(match app.field {
-                    Field::Description => Style::default().fg(Color::Blue),
-                    Field::Name => Style::default(),
-                })
-                .scroll((0, scroll))
+            let width = chunks[1].width.max(3) - 3;
+            let desc_input = Paragraph::new(&*app.new_todo.description)
+                .wrap(tui::widgets::Wrap { trim: true })
                 .block(Block::default().borders(Borders::ALL).title("Description"));
 
-            f.render_widget(name_input, chunks[1]);
-            f.render_widget(desc_input, chunks[2]);
+            f.render_widget(name_input, chunks[0]);
+            f.render_widget(desc_input, chunks[1]);
 
-            match app.field {
-                Field::Name => f.set_cursor(
-                    chunks[1].x + (app.new_todo.name.cursor() as u16).min(width) + 1,
-                    chunks[1].y + 1,
-                ),
-                Field::Description => f.set_cursor(
-                    chunks[2].x + (app.new_todo.description.cursor() as u16).min(width) + 1,
-                    chunks[2].y + 1,
-                ),
+            let binds = [
+                ("Back", app.keys.back.to_string()),
+                ("Next Field", app.keys.next_input.to_string()),
+                ("Prev Field", app.keys.prev_input.to_string()),
+                ("Add desc", app.keys.add_description.to_string()),
+                ("Save", app.keys.save_new_todo.to_string()),
+            ];
+            let mut spans: Vec<Span> = Vec::new();
+            for bind in binds {
+                spans.push(Span::styled(
+                    format!("{} [{}]", bind.0, bind.1),
+                    Style::default()
+                        .bg(Color::Blue)
+                        .add_modifier(Modifier::BOLD),
+                ));
+                // space between hints
+                spans.push(Span::raw(" "));
             }
+            let bind_bar = Paragraph::new(Spans::from(spans))
+                .wrap(tui::widgets::Wrap { trim: true })
+                .block(Block::default().borders(Borders::NONE));
+            let bind_bar_rect = Rect {
+                x: 0,
+                y: size.height - 1,
+                width: size.width,
+                height: 1,
+            };
+            f.render_widget(bind_bar, bind_bar_rect);
+
+            f.set_cursor(
+                chunks[0].x + (app.new_todo.name.cursor() as u16).min(width) + 1,
+                chunks[0].y + 1,
+            );
         }
     }
+}
+
+type Result<T> = std::result::Result<T, Box<dyn Error>>;
+
+// Inits the terminal.
+pub fn init_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
+    crossterm::execute!(io::stdout(), EnterAlternateScreen)?;
+    enable_raw_mode()?;
+
+    let backend = CrosstermBackend::new(io::stdout());
+
+    let mut terminal = Terminal::new(backend)?;
+    terminal.hide_cursor()?;
+
+    Ok(terminal)
+}
+
+// Resets the terminal.
+pub fn reset_terminal() -> Result<()> {
+    disable_raw_mode()?;
+    crossterm::execute!(io::stdout(), LeaveAlternateScreen)?;
+
+    Ok(())
 }
