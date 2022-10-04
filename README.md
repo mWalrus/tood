@@ -1,1 +1,1 @@
-# ProjMan: TUI Project Manager
+# Tood: a simple CLI todo manager
