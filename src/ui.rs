@@ -111,6 +111,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 ("Quit", app.keys.quit.to_string()),
             ];
             let mut spans: Vec<Span> = Vec::new();
+            spans.push(Span::raw(" "));
             for bind in binds {
                 spans.push(Span::styled(
                     format!("{} [{}]", bind.0, bind.1),
@@ -122,7 +123,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 spans.push(Span::raw(" "));
             }
             let bind_bar = Paragraph::new(Spans::from(spans))
-                .wrap(tui::widgets::Wrap { trim: true })
+                .wrap(tui::widgets::Wrap { trim: false })
                 .block(Block::default().borders(Borders::NONE));
             f.render_widget(bind_bar, chunks[2]);
 
@@ -200,6 +201,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 ("Save", app.keys.save_new_todo.to_string()),
             ];
             let mut spans: Vec<Span> = Vec::new();
+            spans.push(Span::raw(" "));
             for bind in binds {
                 spans.push(Span::styled(
                     format!("{} [{}]", bind.0, bind.1),
@@ -211,7 +213,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 spans.push(Span::raw(" "));
             }
             let bind_bar = Paragraph::new(Spans::from(spans))
-                .wrap(tui::widgets::Wrap { trim: true })
+                .wrap(tui::widgets::Wrap { trim: false })
                 .block(Block::default().borders(Borders::NONE));
             let bind_bar_rect = Rect {
                 x: 0,
