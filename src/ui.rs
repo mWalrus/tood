@@ -1,12 +1,11 @@
 use crate::keymap::key_match;
-use crate::types::{App, InputMode};
+use crate::types::{App, ErrLevel, InputMode};
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use std::error::Error;
-use std::io::{self, stdout};
-use std::io::{Stdout, Write};
+use std::io;
 use tui::backend::{Backend, CrosstermBackend};
 use tui::layout::{Constraint, Layout, Rect};
 use tui::style::{Color, Modifier, Style};
@@ -18,6 +17,11 @@ pub fn run(mut app: App) -> io::Result<()> {
     let mut terminal = init_terminal().unwrap();
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
+
+        // clear the current flashed notification from the screen
+        if app.notification.rx.try_recv().is_ok() {
+            app.notification.clear();
+        }
 
         if let Event::Key(key) = event::read()? {
             match app.mode {
@@ -31,6 +35,8 @@ pub fn run(mut app: App) -> io::Result<()> {
                         app.todos.next();
                     } else if key_match(&key, &app.keys.add_todo) {
                         app.mode = InputMode::Editing;
+                    } else if key_match(&key, &app.keys.edit_todo) {
+                        app.edit_todo();
                     } else if key_match(&key, &app.keys.toggle_completed) {
                         app.toggle_todo_completed();
                     } else if key_match(&key, &app.keys.remove_todo) {
@@ -56,10 +62,9 @@ pub fn run(mut app: App) -> io::Result<()> {
 }
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    // TODO: draw
     match app.mode {
         InputMode::Normal => {
-            // TODO: normal todo view
+            let size = f.size();
             let chunks = Layout::default()
                 .direction(tui::layout::Direction::Vertical)
                 .constraints(
@@ -70,7 +75,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     ]
                     .as_ref(),
                 )
-                .split(f.size());
+                .split(size);
 
             let list_items: Vec<ListItem> = app
                 .todos
@@ -100,6 +105,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 ("Down", app.keys.move_down.to_string()),
                 ("Add", app.keys.add_todo.to_string()),
                 ("Toggle", app.keys.toggle_completed.to_string()),
+                ("Edit", app.keys.edit_todo.to_string()),
                 ("Delete", app.keys.remove_todo.to_string()),
                 ("Quit", app.keys.quit.to_string()),
             ];
@@ -118,6 +124,35 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .wrap(tui::widgets::Wrap { trim: true })
                 .block(Block::default().borders(Borders::NONE));
             f.render_widget(bind_bar, chunks[2]);
+
+            if let Some(notif) = &app.notification.msg {
+                let notif_span = match notif.level {
+                    ErrLevel::Error => {
+                        Span::styled(&notif.message, Style::default().bg(Color::LightRed))
+                    }
+                    ErrLevel::Warn => Span::styled(
+                        &notif.message,
+                        Style::default().bg(Color::Yellow).fg(Color::Black),
+                    ),
+                    ErrLevel::Info => {
+                        Span::styled(&notif.message, Style::default().bg(Color::Green))
+                    }
+                };
+                let notif_paragraph =
+                    Paragraph::new(notif_span).block(Block::default().borders(Borders::NONE));
+                let width = notif.message.len() as u16;
+                // 2 extra to move it inside the borders
+                let x = size.width - width - 2;
+
+                let rect = Rect {
+                    x,
+                    y: 1,
+                    width,
+                    height: 1,
+                };
+
+                f.render_widget(notif_paragraph, rect);
+            }
         }
         InputMode::Editing => {
             // TODO: edit todo view

@@ -1,3 +1,7 @@
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::thread;
+use std::time::Duration;
+
 use anyhow::Result;
 use crossterm::event::{Event, KeyEvent};
 use serde::{Deserialize, Serialize};
@@ -20,6 +24,41 @@ pub struct App {
     pub new_todo: TodoInput,
     pub keys: ToodKeyList,
     pub mode: InputMode,
+    pub notification: Notification,
+}
+
+#[derive(Clone)]
+pub struct ToodMsg {
+    pub message: String,
+    pub level: ErrLevel,
+}
+
+#[derive(Clone)]
+pub enum ErrLevel {
+    Error,
+    Warn,
+    Info,
+}
+
+impl ToodMsg {
+    fn warn<T: ToString>(msg: T) -> Self {
+        Self {
+            message: msg.to_string(),
+            level: ErrLevel::Warn,
+        }
+    }
+    fn err<T: ToString>(msg: T) -> Self {
+        Self {
+            message: msg.to_string(),
+            level: ErrLevel::Error,
+        }
+    }
+    fn info<T: ToString>(msg: T) -> Self {
+        Self {
+            message: msg.to_string(),
+            level: ErrLevel::Info,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -40,7 +79,34 @@ impl Default for App {
             new_todo: TodoInput::default(),
             keys: ToodKeyList::default(),
             mode: InputMode::Normal,
+            notification: Notification::new(),
         }
+    }
+}
+
+pub struct Notification {
+    pub rx: Receiver<u8>,
+    tx: Sender<u8>,
+    pub msg: Option<ToodMsg>,
+}
+
+impl Notification {
+    pub fn new() -> Self {
+        let (tx, rx) = mpsc::channel();
+        Self { rx, tx, msg: None }
+    }
+
+    pub fn set(&mut self, msg: ToodMsg) {
+        self.msg = Some(msg);
+        let tx = self.tx.clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(1000));
+            tx.send(0).unwrap();
+        });
+    }
+
+    pub fn clear(&mut self) {
+        self.msg = None;
     }
 }
 
@@ -49,6 +115,7 @@ impl App {
         self.todos.remove_current();
         self.todos.check_selection();
         self.save_to_disk().unwrap();
+        self.notification.set(ToodMsg::warn("Removed todo"));
     }
 
     pub fn get_current_description(&self) -> &str {
@@ -73,15 +140,32 @@ impl App {
         self.new_todo.description = desc;
     }
 
+    pub fn edit_todo(&mut self) {
+        if let Some(current_todo) = self.todos.selected() {
+            self.new_todo.name = Input::new(current_todo.name.to_string());
+            self.new_todo.description = current_todo.description.to_string();
+            self.mode = InputMode::Editing;
+        }
+        self.notification.set(ToodMsg::err("No todo selected"));
+    }
+
     pub fn toggle_todo_completed(&mut self) {
         self.todos.toggle_completed();
         self.save_to_disk().unwrap();
+        let toggle_msg = if self.todos.selected().unwrap().finished {
+            "completed"
+        } else {
+            "not completed"
+        };
+        self.notification
+            .set(ToodMsg::info(format!("Marked todo {toggle_msg}")));
     }
 
     pub fn add_todo(&mut self) {
         self.todos.add_todo(&self.new_todo);
         self.reset_state();
         self.save_to_disk().unwrap();
+        self.notification.set(ToodMsg::info("Added new todo"));
     }
 
     pub fn reset_state(&mut self) {
@@ -163,6 +247,13 @@ impl TodoList {
         if self.state.selected().is_none() {
             self.state.select(Some(0))
         }
+    }
+
+    pub fn selected(&self) -> Option<&Todo> {
+        if let Some(s) = self.state.selected() {
+            return Some(&self.todos[s]);
+        }
+        None
     }
 
     pub fn has_selection(&self) -> bool {
