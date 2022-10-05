@@ -196,8 +196,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
             let binds = [
                 ("Back", app.keys.back.to_string()),
-                ("Next Field", app.keys.next_input.to_string()),
-                ("Prev Field", app.keys.prev_input.to_string()),
                 ("Add desc", app.keys.add_description.to_string()),
                 ("Save", app.keys.save_new_todo.to_string()),
             ];

@@ -56,8 +56,6 @@ pub struct ToodKeyList {
     pub edit_todo: ToodKeyEvent,
     pub remove_todo: ToodKeyEvent,
     pub save_new_todo: ToodKeyEvent,
-    pub next_input: ToodKeyEvent,
-    pub prev_input: ToodKeyEvent,
     pub back: ToodKeyEvent,
     pub quit: ToodKeyEvent,
 }
@@ -74,8 +72,6 @@ impl Default for ToodKeyList {
             edit_todo:        ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()),
             remove_todo:      ToodKeyEvent::new(KeyCode::Char('d'), KeyModifiers::empty()),
             save_new_todo:    ToodKeyEvent::new(KeyCode::Char('s'), KeyModifiers::CONTROL),
-            next_input:       ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
-            prev_input:       ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::SHIFT),
             back:             ToodKeyEvent::new(KeyCode::Esc,       KeyModifiers::empty()),
             quit:             ToodKeyEvent::new(KeyCode::Char('q'), KeyModifiers::empty()),
         }
