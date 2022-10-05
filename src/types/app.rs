@@ -24,6 +24,7 @@ pub enum InputMode {
 pub struct TodoInput {
     pub name: Input,
     pub description: String,
+    pub is_editing_existing: bool,
 }
 
 impl Default for App {
@@ -41,7 +42,6 @@ impl Default for App {
 impl App {
     pub fn remove_current_todo(&mut self) {
         self.todos.remove_current();
-        self.todos.check_selection();
         self.save_to_disk().unwrap();
         self.notification.set(ToodMsg::warn("Removed todo"));
     }
@@ -72,7 +72,9 @@ impl App {
         if let Some(current_todo) = self.todos.selected() {
             self.new_todo.name = Input::new(current_todo.name.to_string());
             self.new_todo.description = current_todo.description.to_string();
+            self.new_todo.is_editing_existing = true;
             self.mode = InputMode::Editing;
+            return;
         }
         self.notification.set(ToodMsg::err("No todo selected"));
     }
@@ -81,24 +83,27 @@ impl App {
         self.todos.toggle_completed();
         self.save_to_disk().unwrap();
         let toggle_msg = if self.todos.selected().unwrap().finished {
-            "completed"
+            "Marked todo completed"
         } else {
-            "not completed"
+            "Marked todo not completed"
         };
-        self.notification
-            .set(ToodMsg::info(format!("Marked todo {toggle_msg}")));
+        self.notification.set(ToodMsg::info(toggle_msg));
     }
 
     pub fn add_todo(&mut self) {
         self.todos.add_todo(&self.new_todo);
-        self.reset_state();
         self.save_to_disk().unwrap();
-        self.notification.set(ToodMsg::info("Added new todo"));
+        let action = if self.new_todo.is_editing_existing {
+            "Edited existing todo"
+        } else {
+            "Added new todo"
+        };
+        self.reset_state();
+        self.notification.set(ToodMsg::info(action));
     }
 
     pub fn reset_state(&mut self) {
         self.mode = InputMode::Normal;
-        self.new_todo.name.reset();
-        self.new_todo.description = String::new();
+        self.new_todo = TodoInput::default();
     }
 }

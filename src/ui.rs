@@ -1,6 +1,6 @@
 use crate::keymap::key_match;
 use crate::types::app::{App, InputMode};
-use crate::types::notification::ErrLevel;
+use crate::types::notification::ToodMsgType;
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -128,14 +128,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
             if let Some(notif) = &app.notification.msg {
                 let notif_span = match notif.level {
-                    ErrLevel::Error => {
+                    ToodMsgType::Error => {
                         Span::styled(&notif.message, Style::default().bg(Color::LightRed))
                     }
-                    ErrLevel::Warn => Span::styled(
+                    ToodMsgType::Warn => Span::styled(
                         &notif.message,
                         Style::default().bg(Color::Yellow).fg(Color::Black),
                     ),
-                    ErrLevel::Info => {
+                    ToodMsgType::Info => {
                         Span::styled(&notif.message, Style::default().bg(Color::Green))
                     }
                 };

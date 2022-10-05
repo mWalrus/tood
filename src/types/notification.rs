@@ -33,11 +33,11 @@ impl Notification {
 #[derive(Clone)]
 pub struct ToodMsg {
     pub message: String,
-    pub level: ErrLevel,
+    pub level: ToodMsgType,
 }
 
 #[derive(Clone)]
-pub enum ErrLevel {
+pub enum ToodMsgType {
     Error,
     Warn,
     Info,
@@ -47,19 +47,19 @@ impl ToodMsg {
     pub fn warn<T: ToString>(msg: T) -> Self {
         Self {
             message: msg.to_string(),
-            level: ErrLevel::Warn,
+            level: ToodMsgType::Warn,
         }
     }
     pub fn err<T: ToString>(msg: T) -> Self {
         Self {
             message: msg.to_string(),
-            level: ErrLevel::Error,
+            level: ToodMsgType::Error,
         }
     }
     pub fn info<T: ToString>(msg: T) -> Self {
         Self {
             message: msg.to_string(),
-            level: ErrLevel::Info,
+            level: ToodMsgType::Info,
         }
     }
 }
