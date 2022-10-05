@@ -3,7 +3,7 @@ mod types;
 mod ui;
 
 use std::error::Error;
-use types::App;
+use types::app::App;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let app = App::default();

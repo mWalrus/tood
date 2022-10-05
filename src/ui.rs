@@ -1,5 +1,6 @@
 use crate::keymap::key_match;
-use crate::types::{App, ErrLevel, InputMode};
+use crate::types::app::{App, InputMode};
+use crate::types::notification::ErrLevel;
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
