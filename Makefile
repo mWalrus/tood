@@ -1,24 +1,13 @@
 prog :=tood
 
-debug ?=
-
-$(info debug is $(debug))
-
-ifdef debug
-  release :=
-  target :=debug
-  extension :=debug
-else
-  release :=--release
-  target :=release
-  extension :=
-endif
+release :=--release
+target :=release
 
 build:
 	cargo build $(release)
 
 install:
-	cp target/$(target)/$(prog) ~/bin/$(prog)-$(extension)
+	sudo cp target/$(target)/$(prog) /sbin/$(prog)
 
 all: build install
  
