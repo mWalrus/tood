@@ -4,7 +4,6 @@ pub mod views;
 
 use crate::keymap::key_match;
 use crate::types::app::{App, InputMode};
-use crate::types::notification::ToodMsgType;
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -12,10 +11,6 @@ use crossterm::terminal::{
 use std::error::Error;
 use std::io;
 use tui::backend::{Backend, CrosstermBackend};
-use tui::layout::{Constraint, Layout, Rect};
-use tui::style::{Color, Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use tui::{Frame, Terminal};
 
 pub fn run(mut app: App) -> io::Result<()> {
