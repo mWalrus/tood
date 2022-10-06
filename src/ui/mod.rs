@@ -62,10 +62,11 @@ pub fn run(mut app: App) -> io::Result<()> {
 }
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    // NOTE: we currently render the main application view
+    //       no matter the mode we're in, so lets keep this here for now
+    views::todo_list(app, f);
     match app.mode {
         InputMode::Normal => {
-            views::todo_list(app, f);
-
             let binds = [
                 ("Up", app.keys.move_up.to_string()),
                 ("Down", app.keys.move_down.to_string()),
@@ -78,9 +79,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             hint_bar::draw(f, &binds);
         }
         InputMode::Editing => {
-            views::todo_list(app, f);
             views::edit_modal(app, f);
-
             let binds = [
                 ("Back", app.keys.back.to_string()),
                 ("Add desc", app.keys.add_description.to_string()),
@@ -89,7 +88,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             hint_bar::draw(f, &binds);
         }
     }
-    // draws notification if set
+    // draws notification if it exists
     notification::draw(app, f);
 }
 
