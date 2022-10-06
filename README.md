@@ -1,3 +1,3 @@
 # Tood: a simple CLI todo manager
 
-![Main Screen](./media/main.png)
+![Demo](./media/tood-demo.gif)
