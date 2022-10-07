@@ -19,5 +19,5 @@
 - [ ] Inline time/date highlighting (e.g. "do something __at 1:30 pm tomorrow__")
   - [ ] Parse due date from matches
 - [ ] Configurable keybinds
-- [ ] Fuzzy todo finder
+- [x] Fuzzy todo finder
 - [ ] Recurring todos
