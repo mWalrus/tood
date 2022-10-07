@@ -1,39 +1,31 @@
 use super::notification::{Notification, ToodMsg};
+use super::skimmer::Skimmer;
 use super::todo_list::TodoList;
 use crate::keymap::ToodKeyList;
 
-use crossterm::event::{Event, KeyEvent};
 use std::io;
-use tui_input::backend::crossterm as input_backend;
-use tui_input::Input;
 
 pub struct App {
     pub todos: TodoList,
-    pub new_todo: TodoInput,
     pub keys: ToodKeyList,
     pub mode: InputMode,
+    pub skimmer: Skimmer,
     pub notification: Notification,
 }
 
 pub enum InputMode {
     Normal,
     Editing,
-}
-
-#[derive(Default)]
-pub struct TodoInput {
-    pub name: Input,
-    pub description: String,
-    pub is_editing_existing: bool,
+    Find,
 }
 
 impl Default for App {
     fn default() -> App {
         App {
             todos: TodoList::load(),
-            new_todo: TodoInput::default(),
             keys: ToodKeyList::default(),
             mode: InputMode::Normal,
+            skimmer: Skimmer::default(),
             notification: Notification::new(),
         }
     }
@@ -59,24 +51,18 @@ impl App {
         Ok(())
     }
 
-    pub fn handle_input_event(&mut self, e: KeyEvent) {
-        input_backend::to_input_request(Event::Key(e)).and_then(|r| self.new_todo.name.handle(r));
-    }
-
     pub fn edit_description(&mut self) {
-        let desc = edit::edit(&self.new_todo.description).unwrap();
-        self.new_todo.description = desc;
+        let desc = edit::edit(&self.todos.new_todo.description).unwrap();
+        self.todos.new_todo.description = desc;
     }
 
     pub fn edit_todo(&mut self) {
-        if let Some(current_todo) = self.todos.selected() {
-            self.new_todo.name = Input::new(current_todo.name.to_string());
-            self.new_todo.description = current_todo.description.to_string();
-            self.new_todo.is_editing_existing = true;
-            self.mode = InputMode::Editing;
+        if self.todos.selected().is_none() {
+            self.notification.set(ToodMsg::err("No todo selected"));
             return;
         }
-        self.notification.set(ToodMsg::err("No todo selected"));
+        self.todos.populate_new_todo();
+        self.mode = InputMode::Editing;
     }
 
     pub fn toggle_todo_completed(&mut self) {
@@ -91,9 +77,9 @@ impl App {
     }
 
     pub fn add_todo(&mut self) {
-        self.todos.add_todo(&self.new_todo);
+        self.todos.add_todo(self.todos.new_todo.clone());
         self.save_to_disk().unwrap();
-        let action = if self.new_todo.is_editing_existing {
+        let action = if self.todos.new_todo.is_editing_existing {
             "Edited existing todo"
         } else {
             "Added new todo"
@@ -104,6 +90,29 @@ impl App {
 
     pub fn reset_state(&mut self) {
         self.mode = InputMode::Normal;
-        self.new_todo = TodoInput::default();
+        self.todos.reset_input();
+        self.skimmer = Skimmer::default();
+    }
+
+    pub fn load_fuzzy_selection(&mut self) {
+        if let Some(selection) = self.skimmer.state.selected() {
+            let match_item = &self.skimmer.matches[selection];
+            let i = self
+                .todos
+                .todos
+                .iter()
+                .position(|todo| todo.name == match_item.text);
+            if let Some(i) = i {
+                self.todos.state.select(Some(i));
+            }
+        }
+        self.skimmer = Skimmer::default();
+    }
+
+    pub fn select_prev_skim_result(&mut self) {
+        self.skimmer.previous();
+    }
+    pub fn select_next_skim_result(&mut self) {
+        self.skimmer.next();
     }
 }

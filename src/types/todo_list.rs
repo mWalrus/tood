@@ -1,7 +1,8 @@
+use crossterm::event::{Event, KeyEvent};
 use serde::{Deserialize, Serialize};
 use tui::widgets::ListState;
-
-use super::app::TodoInput;
+use tui_input::backend::crossterm as input_backend;
+use tui_input::Input;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {
@@ -11,12 +12,21 @@ pub struct Todo {
     pub description: String,
 }
 
+#[derive(Default, Debug, Clone)]
+pub struct TodoInput {
+    pub name: Input,
+    pub description: String,
+    pub is_editing_existing: bool,
+}
+
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct TodoList {
     #[serde(skip, default)]
     pub state: ListState,
     #[serde(default, rename(serialize = "todos", deserialize = "todos"))]
     pub todos: Vec<Todo>,
+    #[serde(skip, default)]
+    pub new_todo: TodoInput,
 }
 
 impl TodoList {
@@ -72,7 +82,7 @@ impl TodoList {
         }
     }
 
-    pub fn add_todo(&mut self, item: &TodoInput) {
+    pub fn add_todo(&mut self, item: TodoInput) {
         let new_todo = Todo {
             finished: false,
             name: item.name.value().into(),
@@ -110,5 +120,23 @@ impl TodoList {
             let is_completed = self.todos[self.state.selected().unwrap()].finished;
             self.todos[self.state.selected().unwrap()].finished = !is_completed
         }
+    }
+
+    pub fn handle_input(&mut self, ev: KeyEvent) {
+        input_backend::to_input_request(Event::Key(ev)).and_then(|r| self.new_todo.name.handle(r));
+    }
+
+    pub fn reset_input(&mut self) {
+        self.new_todo = TodoInput::default();
+    }
+
+    pub fn populate_new_todo(&mut self) {
+        if !self.has_selection() {
+            return;
+        }
+        let current_todo = &self.todos[self.state.selected().unwrap()];
+        self.new_todo.name = Input::new(current_todo.name.to_string());
+        self.new_todo.description = current_todo.description.to_string();
+        self.new_todo.is_editing_existing = true;
     }
 }

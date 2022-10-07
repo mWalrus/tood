@@ -50,12 +50,15 @@ impl From<&ToodKeyEvent> for KeyEvent {
 pub struct ToodKeyList {
     pub move_up: ToodKeyEvent,
     pub move_down: ToodKeyEvent,
+    pub secondary_move_up: ToodKeyEvent,
+    pub secondary_move_down: ToodKeyEvent,
     pub toggle_completed: ToodKeyEvent,
     pub add_todo: ToodKeyEvent,
     pub add_description: ToodKeyEvent,
     pub edit_todo: ToodKeyEvent,
     pub remove_todo: ToodKeyEvent,
-    pub save_new_todo: ToodKeyEvent,
+    pub submit: ToodKeyEvent,
+    pub find: ToodKeyEvent,
     pub back: ToodKeyEvent,
     pub quit: ToodKeyEvent,
 }
@@ -64,16 +67,19 @@ pub struct ToodKeyList {
 impl Default for ToodKeyList {
     fn default() -> Self {
         Self {
-            move_up:          ToodKeyEvent::new(KeyCode::Char('k'), KeyModifiers::empty()),
-            move_down:        ToodKeyEvent::new(KeyCode::Char('j'), KeyModifiers::empty()),
-            toggle_completed: ToodKeyEvent::new(KeyCode::Char(' '), KeyModifiers::empty()),
-            add_todo:         ToodKeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()),
-            add_description:  ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
-            edit_todo:        ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()),
-            remove_todo:      ToodKeyEvent::new(KeyCode::Char('d'), KeyModifiers::empty()),
-            save_new_todo:    ToodKeyEvent::new(KeyCode::Char('s'), KeyModifiers::CONTROL),
-            back:             ToodKeyEvent::new(KeyCode::Esc,       KeyModifiers::empty()),
-            quit:             ToodKeyEvent::new(KeyCode::Char('q'), KeyModifiers::empty()),
+            move_up:             ToodKeyEvent::new(KeyCode::Char('k'), KeyModifiers::empty()),
+            move_down:           ToodKeyEvent::new(KeyCode::Char('j'), KeyModifiers::empty()),
+            secondary_move_up:   ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
+            secondary_move_down: ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::empty()),
+            toggle_completed:    ToodKeyEvent::new(KeyCode::Char(' '), KeyModifiers::empty()),
+            add_todo:            ToodKeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()),
+            add_description:     ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
+            edit_todo:           ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()),
+            remove_todo:         ToodKeyEvent::new(KeyCode::Char('d'), KeyModifiers::empty()),
+            submit:              ToodKeyEvent::new(KeyCode::Enter,     KeyModifiers::empty()),
+            find:                ToodKeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()),
+            back:                ToodKeyEvent::new(KeyCode::Esc,       KeyModifiers::empty()),
+            quit:                ToodKeyEvent::new(KeyCode::Char('q'), KeyModifiers::empty()),
         }
     }
 }

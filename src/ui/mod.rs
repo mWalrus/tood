@@ -1,5 +1,6 @@
 pub mod hint_bar;
 pub mod notification;
+mod utils;
 pub mod views;
 
 use crate::keymap::key_match;
@@ -35,6 +36,8 @@ pub fn run(mut app: App) -> io::Result<()> {
                         app.todos.next();
                     } else if key_match(&key, &app.keys.add_todo) {
                         app.mode = InputMode::Editing;
+                    } else if key_match(&key, &app.keys.find) {
+                        app.mode = InputMode::Find;
                     } else if key_match(&key, &app.keys.edit_todo) {
                         app.edit_todo();
                     } else if key_match(&key, &app.keys.toggle_completed) {
@@ -46,14 +49,28 @@ pub fn run(mut app: App) -> io::Result<()> {
                 InputMode::Editing => {
                     if key_match(&key, &app.keys.back) {
                         app.reset_state();
-                    } else if key_match(&key, &app.keys.save_new_todo) {
+                    } else if key_match(&key, &app.keys.submit) {
                         app.add_todo();
                     } else if key_match(&key, &app.keys.add_description) {
                         reset_terminal().unwrap();
                         app.edit_description();
                         terminal = init_terminal().unwrap();
                     } else {
-                        app.handle_input_event(key);
+                        app.todos.handle_input(key);
+                    }
+                }
+                InputMode::Find => {
+                    if key_match(&key, &app.keys.back) {
+                        app.reset_state();
+                    } else if key_match(&key, &app.keys.secondary_move_up) {
+                        app.select_prev_skim_result();
+                    } else if key_match(&key, &app.keys.secondary_move_down) {
+                        app.select_next_skim_result();
+                    } else if key_match(&key, &app.keys.submit) {
+                        app.load_fuzzy_selection();
+                        app.mode = InputMode::Normal;
+                    } else {
+                        app.skimmer.skim(key, &app.todos.todos);
                     }
                 }
             }
@@ -83,7 +100,16 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             let binds = [
                 ("Back", app.keys.back.to_string()),
                 ("Add desc", app.keys.add_description.to_string()),
-                ("Save", app.keys.save_new_todo.to_string()),
+                ("Save", app.keys.submit.to_string()),
+            ];
+            hint_bar::draw(f, &binds);
+        }
+        InputMode::Find => {
+            views::fuzzy_matcher(app, f);
+            let binds = [
+                ("Back", app.keys.back.to_string()),
+                ("Up", app.keys.secondary_move_up.to_string()),
+                ("Down", app.keys.secondary_move_down.to_string()),
             ];
             hint_bar::draw(f, &binds);
         }

@@ -9,6 +9,7 @@ edition = "2021"
 confy = "0.5.0"
 crossterm = "0.25.0"
 edit = "0.1.4"
+fuzzy-matcher = "0.3.7"
 serde = { version = "1.0.145", features = ["derive"] }
 toml = "0.5.9"
 tui = "0.19.0"

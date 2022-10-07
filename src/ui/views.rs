@@ -1,6 +1,6 @@
 use tui::{
     backend::Backend,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout},
     style::{Color, Style},
     text::Spans,
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
@@ -8,6 +8,8 @@ use tui::{
 };
 
 use crate::types::app::App;
+
+use super::utils;
 
 pub fn todo_list<B: Backend>(app: &mut App, f: &mut Frame<B>) {
     let size = f.size();
@@ -64,27 +66,14 @@ pub fn todo_list<B: Backend>(app: &mut App, f: &mut Frame<B>) {
 }
 
 pub fn edit_modal<B: Backend>(app: &App, f: &mut Frame<B>) {
-    let size = f.size();
-    let width = size.width / 2;
-    let x = width / 2;
-
-    let height = size.height.min(20);
-
-    let y = if height == size.height { 0 } else { 20 };
-
-    let rect = Rect {
-        x,
-        y,
-        width,
-        height,
-    };
+    let rect = utils::centered_rect(f.size());
 
     let chunks = Layout::default()
         .direction(tui::layout::Direction::Vertical)
         .constraints([Constraint::Length(3), Constraint::Max(10)].as_ref())
         .split(rect);
 
-    let name_input = &app.new_todo.name;
+    let name_input = &app.todos.new_todo.name;
     let width = chunks[0].width.max(3) - 3;
     let scroll = (name_input.cursor() as u16).max(width) - width;
     let name_input = Paragraph::new(name_input.value())
@@ -97,7 +86,7 @@ pub fn edit_modal<B: Backend>(app: &App, f: &mut Frame<B>) {
         );
 
     let width = chunks[1].width.max(3) - 3;
-    let desc_input = Paragraph::new(&*app.new_todo.description)
+    let desc_input = Paragraph::new(&*app.todos.new_todo.description)
         .wrap(tui::widgets::Wrap { trim: true })
         .block(Block::default().borders(Borders::ALL).title("Description"));
 
@@ -107,7 +96,50 @@ pub fn edit_modal<B: Backend>(app: &App, f: &mut Frame<B>) {
     f.render_widget(name_input, chunks[0]);
     f.render_widget(desc_input, chunks[1]);
     f.set_cursor(
-        chunks[0].x + (app.new_todo.name.cursor() as u16).min(width) + 1,
+        chunks[0].x + (app.todos.new_todo.name.cursor() as u16).min(width) + 1,
+        chunks[0].y + 1,
+    );
+}
+
+pub fn fuzzy_matcher<B: Backend>(app: &mut App, f: &mut Frame<B>) {
+    let rect = utils::centered_rect(f.size());
+
+    let chunks = Layout::default()
+        .direction(tui::layout::Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Max(10)].as_ref())
+        .split(rect);
+
+    let skimmer_input = &app.skimmer.input;
+    let width = chunks[0].width.max(3) - 3;
+    let scroll = (skimmer_input.cursor() as u16).max(width) - width;
+    let skimmer_input = Paragraph::new(skimmer_input.value())
+        .scroll((0, scroll))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Blue))
+                .title("Name"),
+        );
+
+    let width = chunks[1].width.max(3) - 3;
+
+    let list_items: Vec<ListItem> = app
+        .skimmer
+        .matches
+        .iter()
+        .map(|m| ListItem::new(&*m.text).style(Style::default()))
+        .collect();
+
+    let items = List::new(list_items)
+        .block(Block::default().borders(Borders::ALL).title("Todos"))
+        .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
+    f.render_widget(Clear, chunks[0]);
+    f.render_widget(Clear, chunks[1]);
+
+    f.render_widget(skimmer_input, chunks[0]);
+    f.render_stateful_widget(items, chunks[1], &mut app.skimmer.state);
+    f.set_cursor(
+        chunks[0].x + (app.skimmer.input.cursor() as u16).min(width) + 1,
         chunks[0].y + 1,
     );
 }
