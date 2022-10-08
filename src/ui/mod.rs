@@ -63,9 +63,9 @@ pub fn run(mut app: App) -> io::Result<()> {
                     if key_match(&key, &app.keys.back) {
                         app.reset_state();
                     } else if key_match(&key, &app.keys.secondary_move_up) {
-                        app.select_prev_skim_result();
+                        app.skimmer.previous();
                     } else if key_match(&key, &app.keys.secondary_move_down) {
-                        app.select_next_skim_result();
+                        app.skimmer.next();
                     } else if key_match(&key, &app.keys.submit) {
                         app.load_fuzzy_selection();
                         app.mode = InputMode::Normal;

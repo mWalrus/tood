@@ -108,11 +108,4 @@ impl App {
         }
         self.skimmer = Skimmer::default();
     }
-
-    pub fn select_prev_skim_result(&mut self) {
-        self.skimmer.previous();
-    }
-    pub fn select_next_skim_result(&mut self) {
-        self.skimmer.next();
-    }
 }

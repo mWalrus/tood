@@ -41,27 +41,15 @@ pub fn todo_list<B: Backend>(app: &mut App, f: &mut Frame<B>) {
         })
         .collect();
 
-    let is_selected_finished = if let Some(s) = app.todos.selected() {
-        s.finished
-    } else {
-        false
-    };
-
-    let highlight_style = if is_selected_finished {
-        Style::default().bg(Color::Green).fg(Color::Black)
-    } else {
-        Style::default().bg(Color::Indexed(8))
-    };
-
     let items = List::new(list_items)
-        .block(Block::default().borders(Borders::ALL).title("Todos"))
-        .highlight_style(highlight_style)
+        .block(utils::default_block("Todos"))
+        .highlight_style(Style::default().bg(Color::Indexed(8)))
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, chunks[0], &mut app.todos.state);
 
     let description = Paragraph::new(app.get_current_description())
         .wrap(tui::widgets::Wrap { trim: true })
-        .block(Block::default().borders(Borders::ALL).title("Description"));
+        .block(utils::default_block("Description"));
     f.render_widget(description, chunks[1]);
 }
 
@@ -88,7 +76,7 @@ pub fn edit_modal<B: Backend>(app: &App, f: &mut Frame<B>) {
     let width = chunks[1].width.max(3) - 3;
     let desc_input = Paragraph::new(&*app.todos.new_todo.description)
         .wrap(tui::widgets::Wrap { trim: true })
-        .block(Block::default().borders(Borders::ALL).title("Description"));
+        .block(utils::default_block("Description"));
 
     f.render_widget(Clear, chunks[0]);
     f.render_widget(Clear, chunks[1]);
@@ -147,7 +135,7 @@ pub fn fuzzy_matcher<B: Backend>(app: &mut App, f: &mut Frame<B>) {
         .collect();
 
     let items = List::new(list_items)
-        .block(Block::default().borders(Borders::ALL).title("Todos"))
+        .block(utils::default_block("Todos"))
         .highlight_style(Style::default().bg(Color::Indexed(8)));
     f.render_widget(Clear, chunks[0]);
     f.render_widget(Clear, chunks[1]);
