@@ -110,6 +110,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 ("Back", app.keys.back.to_string()),
                 ("Up", app.keys.secondary_move_up.to_string()),
                 ("Down", app.keys.secondary_move_down.to_string()),
+                ("Select", app.keys.submit.to_string()),
             ];
             hint_bar::draw(f, &binds);
         }

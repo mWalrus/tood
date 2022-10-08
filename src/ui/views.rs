@@ -1,8 +1,8 @@
 use tui::{
     backend::Backend,
     layout::{Constraint, Layout},
-    style::{Color, Style},
-    text::Spans,
+    style::{Color, Modifier, Style},
+    text::{Span, Spans},
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
     Frame,
 };
@@ -48,14 +48,14 @@ pub fn todo_list<B: Backend>(app: &mut App, f: &mut Frame<B>) {
     };
 
     let highlight_style = if is_selected_finished {
-        Style::default().bg(Color::Green)
+        Style::default().bg(Color::Green).fg(Color::Black)
     } else {
-        Style::default().bg(Color::White)
+        Style::default().bg(Color::Indexed(8))
     };
 
     let items = List::new(list_items)
         .block(Block::default().borders(Borders::ALL).title("Todos"))
-        .highlight_style(highlight_style.fg(Color::Black))
+        .highlight_style(highlight_style)
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, chunks[0], &mut app.todos.state);
 
@@ -127,12 +127,28 @@ pub fn fuzzy_matcher<B: Backend>(app: &mut App, f: &mut Frame<B>) {
         .skimmer
         .matches
         .iter()
-        .map(|m| ListItem::new(&*m.text).style(Style::default()))
+        .map(|m| {
+            let mut spans: Vec<Span> = Vec::new();
+            for (i, c) in m.text.chars().enumerate() {
+                if m.indices.contains(&i) {
+                    spans.push(Span::styled(
+                        c.to_string(),
+                        Style::default()
+                            .fg(Color::Blue)
+                            .add_modifier(Modifier::BOLD),
+                    ));
+                } else {
+                    spans.push(Span::raw(c.to_string()));
+                }
+            }
+            let spans = Spans::from(spans);
+            ListItem::new(spans).style(Style::default())
+        })
         .collect();
 
     let items = List::new(list_items)
         .block(Block::default().borders(Borders::ALL).title("Todos"))
-        .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
+        .highlight_style(Style::default().bg(Color::Indexed(8)));
     f.render_widget(Clear, chunks[0]);
     f.render_widget(Clear, chunks[1]);
 

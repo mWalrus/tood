@@ -40,11 +40,6 @@ impl Skimmer {
     }
 
     pub fn next(&mut self) {
-        if self.matches.is_empty() {
-            self.state.select(None);
-            return;
-        }
-
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.matches.len() - 1 {
@@ -59,11 +54,6 @@ impl Skimmer {
     }
 
     pub fn previous(&mut self) {
-        if self.matches.is_empty() {
-            self.state.select(None);
-            return;
-        }
-
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {

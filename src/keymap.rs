@@ -69,8 +69,8 @@ impl Default for ToodKeyList {
         Self {
             move_up:             ToodKeyEvent::new(KeyCode::Char('k'), KeyModifiers::empty()),
             move_down:           ToodKeyEvent::new(KeyCode::Char('j'), KeyModifiers::empty()),
-            secondary_move_up:   ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
-            secondary_move_down: ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::empty()),
+            secondary_move_up:   ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::SHIFT),
+            secondary_move_down: ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
             toggle_completed:    ToodKeyEvent::new(KeyCode::Char(' '), KeyModifiers::empty()),
             add_todo:            ToodKeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()),
             add_description:     ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
