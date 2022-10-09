@@ -89,6 +89,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 ("Up", app.keys.move_up.to_string()),
                 ("Down", app.keys.move_down.to_string()),
                 ("Add", app.keys.add_todo.to_string()),
+                ("Find", app.keys.find.to_string()),
                 ("Toggle", app.keys.toggle_completed.to_string()),
                 ("Edit", app.keys.edit_todo.to_string()),
                 ("Delete", app.keys.remove_todo.to_string()),
