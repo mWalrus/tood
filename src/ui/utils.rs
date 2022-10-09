@@ -29,7 +29,7 @@ pub fn default_block(title: &'static str) -> Block {
 
 pub fn metadata_to_list_item(data: TodoMetadata) -> Vec<ListItem<'static>> {
     let mut list_items: Vec<ListItem> = Vec::new();
-    for md in data.into_iter() {
+    for md in data.formatted_vec() {
         let spans = Spans::from(vec![
             Span::styled(md.0, Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(md.1),

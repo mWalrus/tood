@@ -27,31 +27,28 @@ impl Default for TodoMetadata {
     }
 }
 
-impl From<&str> for TodoMetadata {
-    fn from(other: &str) -> Self {
-        TodoMetadata {
-            added_at: DateTime::parse_from_rfc3339(other).unwrap().into(),
-            ..Default::default()
+impl TodoMetadata {
+    pub fn formatted_vec(self) -> Vec<(&'static str, String)> {
+        #[inline(always)]
+        fn yes_no(b: bool) -> &'static str {
+            if b {
+                "yes"
+            } else {
+                "no"
+            }
         }
-    }
-}
-
-impl IntoIterator for TodoMetadata {
-    type Item = (&'static str, String);
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
         let mut c = vec![];
         c.push(("Added: ", self.added_at.format(TIME_FORMAT).to_string()));
 
-        if let Some(edited_at) = self.edited_at {
-            c.push(("Edited: ", edited_at.format(TIME_FORMAT).to_string()))
-        }
+        let edited_at = if let Some(ea) = self.edited_at {
+            ea.format(TIME_FORMAT).to_string()
+        } else {
+            String::new()
+        };
 
-        if self.recurring {
-            c.push(("Recurring: ", self.recurring.to_string()));
-        }
+        c.push(("Edited: ", edited_at));
+        c.push(("Recurring: ", yes_no(self.recurring).into()));
 
-        c.into_iter()
+        c
     }
 }
