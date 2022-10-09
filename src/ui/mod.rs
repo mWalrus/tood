@@ -56,6 +56,8 @@ pub fn run(mut app: App) -> io::Result<()> {
                         reset_terminal().unwrap();
                         app.edit_description();
                         terminal = init_terminal().unwrap();
+                    } else if key_match(&key, &app.keys.mark_recurring) {
+                        app.toggle_recurring();
                     } else {
                         app.todos.handle_input(key);
                     }
@@ -102,6 +104,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             let binds = [
                 ("Back", app.keys.back.to_string()),
                 ("Edit desc", app.keys.add_description.to_string()),
+                ("Mark recurring", app.keys.mark_recurring.to_string()),
                 ("Save", app.keys.submit.to_string()),
             ];
             hint_bar::draw(f, &binds);

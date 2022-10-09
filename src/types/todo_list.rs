@@ -20,6 +20,7 @@ pub struct Todo {
 pub struct TodoInput {
     pub name: Input,
     pub description: String,
+    pub recurring: bool,
     pub is_editing_existing: bool,
 }
 
@@ -86,19 +87,20 @@ impl TodoList {
         }
     }
 
-    pub fn add_todo(&mut self, item: TodoInput) {
+    pub fn add_todo(&mut self) {
         let mut new_todo = Todo {
             finished: false,
-            name: item.name.value().into(),
-            description: item.description.clone(),
+            name: self.new_todo.name.value().into(),
+            description: self.new_todo.description.clone(),
             metadata: TodoMetadata::default(),
         };
-        if item.is_editing_existing {
+        if self.new_todo.is_editing_existing {
             if self.has_selection() {
                 let sel = self.state.selected().unwrap();
                 let original_metadata = self.todos[sel].metadata.clone();
                 new_todo.metadata = TodoMetadata {
                     edited_at: Some(Local::now()),
+                    recurring: self.new_todo.recurring,
                     ..original_metadata
                 };
                 let _ = std::mem::replace(&mut self.todos[sel], new_todo);
@@ -125,11 +127,17 @@ impl TodoList {
         self.state.selected().is_some()
     }
 
-    pub fn toggle_completed(&mut self) {
+    pub fn toggle_completed(&mut self) -> Result<(), ()> {
         if self.has_selection() {
-            let is_completed = self.todos[self.state.selected().unwrap()].finished;
-            self.todos[self.state.selected().unwrap()].finished = !is_completed
+            let selected_todo = &self.todos[self.state.selected().unwrap()];
+            // dont toggle if the todo is recurring
+            if selected_todo.metadata.recurring {
+                return Err(());
+            }
+            let finished = selected_todo.finished;
+            self.todos[self.state.selected().unwrap()].finished = !finished;
         }
+        Ok(())
     }
 
     pub fn handle_input(&mut self, ev: KeyEvent) {
@@ -145,8 +153,17 @@ impl TodoList {
             return;
         }
         let current_todo = &self.todos[self.state.selected().unwrap()];
-        self.new_todo.name = Input::new(current_todo.name.to_string());
-        self.new_todo.description = current_todo.description.to_string();
-        self.new_todo.is_editing_existing = true;
+        let new_todo = TodoInput {
+            name: Input::new(current_todo.name.to_string()),
+            description: current_todo.description.to_string(),
+            is_editing_existing: true,
+            recurring: current_todo.metadata.recurring,
+        };
+        self.new_todo = new_todo;
+    }
+
+    pub fn toggle_recurring(&mut self) -> bool {
+        self.new_todo.recurring = !self.new_todo.recurring;
+        self.new_todo.recurring
     }
 }

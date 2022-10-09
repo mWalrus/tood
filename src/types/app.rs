@@ -71,7 +71,11 @@ impl App {
     }
 
     pub fn toggle_todo_completed(&mut self) {
-        self.todos.toggle_completed();
+        if self.todos.toggle_completed().is_err() {
+            self.notification
+                .set(ToodMsg::warn("Cannot mark recurring todos as completed"));
+            return;
+        }
         self.save_to_disk().unwrap();
         let toggle_msg = if self.todos.selected().unwrap().finished {
             "Marked todo completed"
@@ -82,7 +86,7 @@ impl App {
     }
 
     pub fn add_todo(&mut self) {
-        self.todos.add_todo(self.todos.new_todo.clone());
+        self.todos.add_todo();
         self.save_to_disk().unwrap();
         let action = if self.todos.new_todo.is_editing_existing {
             "Edited existing todo"
@@ -114,5 +118,16 @@ impl App {
             self.todos.state.select(Some(selected_todo));
         }
         self.skimmer = Skimmer::default();
+    }
+
+    pub fn toggle_recurring(&mut self) {
+        let new_state = self.todos.toggle_recurring();
+        let msg = if new_state {
+            "Marked todo recurring"
+        } else {
+            "Marked todo nonrecurring"
+        };
+
+        self.notification.set(ToodMsg::info(msg));
     }
 }

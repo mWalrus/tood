@@ -19,7 +19,8 @@
   - [ ] Due date
     - [ ] Inline time/date highlighting (e.g. "do something __at 1:30 pm tomorrow__")
       - [ ] Parse due date from matches
-- [ ] Recurring todos
+- [x] Recurring todos
+  - Not sure if we want more functionality surrounding this.
 
 ## UI
 - [x] Clear coloring

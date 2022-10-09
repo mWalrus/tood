@@ -29,13 +29,15 @@ pub fn todo_list<B: Backend>(app: &mut App, f: &mut Frame<B>) {
         .todos
         .todos
         .iter()
-        .map(|i| {
-            let (finished, fg_style) = if i.finished {
+        .map(|t| {
+            let (finished, fg_style) = if t.metadata.recurring {
+                ("[∞] ", Style::default().fg(Color::Blue))
+            } else if t.finished {
                 ("[x] ", Style::default().fg(Color::Green))
             } else {
                 ("[ ] ", Style::default())
             };
-            let line = finished.to_string() + i.name.as_ref();
+            let line = finished.to_string() + t.name.as_ref();
             let line = vec![Spans::from(line)];
             ListItem::new(line).style(fg_style)
         })

@@ -14,6 +14,7 @@ pub struct TodoMetadata {
         serialize_with = "serialize_optional_local_date"
     )]
     pub edited_at: Option<DateTime<Local>>,
+    pub recurring: bool,
 }
 
 impl Default for TodoMetadata {
@@ -21,6 +22,7 @@ impl Default for TodoMetadata {
         TodoMetadata {
             added_at: Local::now(),
             edited_at: None,
+            recurring: false,
         }
     }
 }
@@ -44,6 +46,10 @@ impl IntoIterator for TodoMetadata {
 
         if let Some(edited_at) = self.edited_at {
             c.push(("Edited: ", edited_at.format(TIME_FORMAT).to_string()))
+        }
+
+        if self.recurring {
+            c.push(("Recurring: ", self.recurring.to_string()));
         }
 
         c.into_iter()
