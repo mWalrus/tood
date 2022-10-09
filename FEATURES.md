@@ -14,7 +14,8 @@
   - [x] Edit todo descriptions in $EDITOR
 - [x] Delete
 - [ ] Metadata
-  - [ ] Date and time added
+  - [x] Date and time added
+  - [x] Date and time edited (empty if never edited)
   - [ ] Due date
     - [ ] Inline time/date highlighting (e.g. "do something __at 1:30 pm tomorrow__")
       - [ ] Parse due date from matches

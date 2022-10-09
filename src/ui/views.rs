@@ -51,10 +51,26 @@ pub fn todo_list<B: Backend>(app: &mut App, f: &mut Frame<B>) {
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, chunks[0], &mut app.todos.state);
 
-    let description = Paragraph::new(app.get_current_description())
+    let data_chunks = Layout::default()
+        .direction(tui::layout::Direction::Horizontal)
+        .constraints([Constraint::Percentage(70), Constraint::Min(30)].as_ref())
+        .split(chunks[1]);
+
+    let (desc, metadata) = app.get_current_todo_data();
+
+    let description = Paragraph::new(desc)
         .wrap(tui::widgets::Wrap { trim: true })
         .block(utils::default_block("Description"));
-    f.render_widget(description, chunks[1]);
+    f.render_widget(description, data_chunks[0]);
+
+    if let Some(metadata) = metadata {
+        let list = List::new(utils::metadata_to_list_item(metadata))
+            .block(utils::default_block("Metadata"));
+        f.render_widget(list, data_chunks[1]);
+    } else {
+        let placeholder_p = Paragraph::new("").block(utils::default_block("Metadata"));
+        f.render_widget(placeholder_p, data_chunks[1]);
+    };
 }
 
 pub fn edit_modal<B: Backend>(app: &App, f: &mut Frame<B>) {

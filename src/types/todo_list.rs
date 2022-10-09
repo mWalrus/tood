@@ -1,8 +1,11 @@
+use chrono::Local;
 use crossterm::event::{Event, KeyEvent};
 use serde::{Deserialize, Serialize};
 use tui::widgets::ListState;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
+
+use super::metadata::TodoMetadata;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {
@@ -10,6 +13,7 @@ pub struct Todo {
     pub finished: bool,
     pub name: String,
     pub description: String,
+    pub metadata: TodoMetadata,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -31,7 +35,7 @@ pub struct TodoList {
 
 impl TodoList {
     pub fn load() -> TodoList {
-        let mut todo_list: TodoList = confy::load("tood", Some("todos.toml")).unwrap();
+        let mut todo_list: TodoList = confy::load("tood", Some("todos")).unwrap();
         todo_list.correct_selection();
         todo_list
     }
@@ -83,14 +87,20 @@ impl TodoList {
     }
 
     pub fn add_todo(&mut self, item: TodoInput) {
-        let new_todo = Todo {
+        let mut new_todo = Todo {
             finished: false,
             name: item.name.value().into(),
             description: item.description.clone(),
+            metadata: TodoMetadata::default(),
         };
         if item.is_editing_existing {
             if self.has_selection() {
                 let sel = self.state.selected().unwrap();
+                let original_metadata = self.todos[sel].metadata.clone();
+                new_todo.metadata = TodoMetadata {
+                    edited_at: Some(Local::now()),
+                    ..original_metadata
+                };
                 let _ = std::mem::replace(&mut self.todos[sel], new_todo);
                 return;
             } else {
