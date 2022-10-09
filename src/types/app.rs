@@ -97,14 +97,16 @@ impl App {
     pub fn load_fuzzy_selection(&mut self) {
         if let Some(selection) = self.skimmer.state.selected() {
             let match_item = &self.skimmer.matches[selection];
-            let i = self
-                .todos
-                .todos
-                .iter()
-                .position(|todo| todo.name == match_item.text);
-            if let Some(i) = i {
-                self.todos.state.select(Some(i));
-            }
+
+            let mut found_todo_indices: Vec<usize> = Vec::new();
+            self.todos.todos.iter().enumerate().for_each(|(i, t)| {
+                if t.name == match_item.text {
+                    found_todo_indices.push(i)
+                }
+            });
+
+            let selected_todo = found_todo_indices[selection];
+            self.todos.state.select(Some(selected_todo));
         }
         self.skimmer = Skimmer::default();
     }

@@ -26,8 +26,4 @@
 
 ## Fuzzy finder
 - [x] Fuzzy todo finder
-  - Note: Currently we don't handle different todos with the same name.
-          This means that if you fuzzy search for a todo named "testing"
-          and there is another todo called "testing",  the fuzzy matcher
-          will return the index for the first one in the list no matter
-          if you chose the second one.
+  - [x] Select correct todo when several todos have matching names
