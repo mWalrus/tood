@@ -38,6 +38,7 @@ pub fn run(mut app: App) -> io::Result<()> {
                         app.mode = InputMode::Editing;
                     } else if key_match(&key, &app.keys.find) {
                         app.mode = InputMode::Find;
+                        app.skimmer.skim(None, &app.todos.todos);
                     } else if key_match(&key, &app.keys.edit_todo) {
                         app.edit_todo();
                     } else if key_match(&key, &app.keys.toggle_completed) {
@@ -70,7 +71,7 @@ pub fn run(mut app: App) -> io::Result<()> {
                         app.load_fuzzy_selection();
                         app.mode = InputMode::Normal;
                     } else {
-                        app.skimmer.skim(key, &app.todos.todos);
+                        app.skimmer.skim(Some(key), &app.todos.todos);
                     }
                 }
             }
@@ -99,7 +100,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             views::edit_modal(app, f);
             let binds = [
                 ("Back", app.keys.back.to_string()),
-                ("Add desc", app.keys.add_description.to_string()),
+                ("Edit desc", app.keys.add_description.to_string()),
                 ("Save", app.keys.submit.to_string()),
             ];
             hint_bar::draw(f, &binds);

@@ -20,23 +20,39 @@ pub struct Skimmer {
     pub matches: Vec<SkimMatch>,
 }
 
-impl Skimmer {
-    pub fn skim(&mut self, ev: KeyEvent, todos: &[Todo]) {
-        input_backend::to_input_request(Event::Key(ev)).and_then(|r| self.input.handle(r));
-        let mut matches: Vec<SkimMatch> = Vec::new();
-        let matcher = Box::new(SkimMatcherV2::default());
-        for todo in todos {
-            if let Some((score, indices)) = matcher.fuzzy_indices(&todo.name, &self.input.value()) {
-                let m = SkimMatch {
-                    text: todo.name.clone(),
-                    indices,
-                    score,
-                };
-                matches.push(m);
-            }
+impl From<&Todo> for SkimMatch {
+    fn from(other: &Todo) -> Self {
+        Self {
+            text: other.name.to_string(),
+            indices: Vec::new(),
+            score: 0,
         }
-        matches.sort_by(|a, b| a.score.cmp(&b.score));
-        self.matches = matches;
+    }
+}
+
+impl Skimmer {
+    pub fn skim(&mut self, ev: Option<KeyEvent>, todos: &[Todo]) {
+        if let Some(e) = ev {
+            input_backend::to_input_request(Event::Key(e)).and_then(|r| self.input.handle(r));
+            let mut matches: Vec<SkimMatch> = Vec::new();
+            let matcher = Box::new(SkimMatcherV2::default());
+            for todo in todos {
+                if let Some((score, indices)) =
+                    matcher.fuzzy_indices(&todo.name, &self.input.value())
+                {
+                    let m = SkimMatch {
+                        text: todo.name.clone(),
+                        indices,
+                        score,
+                    };
+                    matches.push(m);
+                }
+            }
+            matches.sort_by(|a, b| a.score.cmp(&b.score));
+            self.matches = matches;
+        } else {
+            self.matches = todos.iter().map(|t| SkimMatch::from(t)).collect();
+        }
     }
 
     pub fn next(&mut self) {
