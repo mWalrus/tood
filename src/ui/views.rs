@@ -43,7 +43,11 @@ pub fn todo_list<B: Backend>(app: &mut App, f: &mut Frame<B>) {
 
     let items = List::new(list_items)
         .block(utils::default_block("Todos"))
-        .highlight_style(Style::default().bg(Color::Indexed(8)))
+        .highlight_style(
+            Style::default()
+                .bg(Color::Indexed(8))
+                .add_modifier(Modifier::BOLD),
+        )
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, chunks[0], &mut app.todos.state);
 
@@ -136,7 +140,11 @@ pub fn fuzzy_matcher<B: Backend>(app: &mut App, f: &mut Frame<B>) {
 
     let items = List::new(list_items)
         .block(utils::default_block("Todos"))
-        .highlight_style(Style::default().bg(Color::Indexed(8)));
+        .highlight_style(
+            Style::default()
+                .bg(Color::Indexed(8))
+                .add_modifier(Modifier::BOLD),
+        );
     f.render_widget(Clear, chunks[0]);
     f.render_widget(Clear, chunks[1]);
 
