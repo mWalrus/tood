@@ -26,6 +26,7 @@
 - [x] Clear coloring
 - [x] Flash messages communicating action outcomes
 - [ ] Hint bar height adjustment when width is too small to fit it
+- [ ] Style component holding the coloring for different components
 
 ## Fuzzy finder
 - [x] Fuzzy todo finder
