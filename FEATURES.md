@@ -25,6 +25,7 @@
 ## UI
 - [x] Clear coloring
 - [x] Flash messages communicating action outcomes
+- [ ] Hint bar height adjustment when width is too small to fit it
 
 ## Fuzzy finder
 - [x] Fuzzy todo finder
