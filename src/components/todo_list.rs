@@ -1,11 +1,18 @@
 use chrono::Local;
 use crossterm::event::{Event, KeyEvent};
 use serde::{Deserialize, Serialize};
-use tui::widgets::ListState;
+use tui::backend::Backend;
+use tui::layout::{Constraint, Layout};
+use tui::style::{Color, Modifier, Style};
+use tui::text::Spans;
+use tui::widgets::{List, ListItem, ListState, Paragraph};
+use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 
 use super::metadata::TodoMetadata;
+use super::todo_input::TodoInput;
+use super::{utils, Component};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {
@@ -14,14 +21,6 @@ pub struct Todo {
     pub name: String,
     pub description: String,
     pub metadata: TodoMetadata,
-}
-
-#[derive(Default, Debug, Clone)]
-pub struct TodoInput {
-    pub name: Input,
-    pub description: String,
-    pub recurring: bool,
-    pub is_editing_existing: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -75,7 +74,7 @@ impl TodoList {
         } else if self.todos.is_empty() {
             self.state.select(None);
         } else {
-            let new_selection = self.state.selected().unwrap().checked_sub(1).unwrap_or(0);
+            let new_selection = self.state.selected().unwrap().saturating_sub(1);
             self.state.select(Some(new_selection));
         }
     }
@@ -165,5 +164,63 @@ impl TodoList {
     pub fn toggle_recurring(&mut self) -> bool {
         self.new_todo.recurring = !self.new_todo.recurring;
         self.new_todo.recurring
+    }
+}
+
+impl Component for TodoList {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
+        let size = f.size();
+        let chunks = Layout::default()
+            .direction(tui::layout::Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Percentage(60),
+                    Constraint::Min(3),
+                    Constraint::Length(1),
+                ]
+                .as_ref(),
+            )
+            .split(size);
+
+        let list_items: Vec<ListItem> = self
+            .todos
+            .iter()
+            .map(|t| {
+                let (finished, fg_style) = if t.metadata.recurring {
+                    ("[∞] ", Style::default().fg(Color::Blue))
+                } else if t.finished {
+                    ("[x] ", Style::default().fg(Color::Green))
+                } else {
+                    ("[ ] ", Style::default())
+                };
+                let line = finished.to_string() + t.name.as_ref();
+                let line = vec![Spans::from(line)];
+                ListItem::new(line).style(fg_style)
+            })
+            .collect();
+
+        let items = List::new(list_items)
+            .block(utils::default_block("Todos"))
+            .highlight_style(
+                Style::default()
+                    .bg(Color::Indexed(8))
+                    .add_modifier(Modifier::BOLD),
+            )
+            .highlight_symbol("> ");
+        f.render_stateful_widget(items, chunks[0], &mut self.state);
+
+        let data_chunks = Layout::default()
+            .direction(tui::layout::Direction::Horizontal)
+            .constraints([Constraint::Percentage(70), Constraint::Min(30)].as_ref())
+            .split(chunks[1]);
+
+        if let Some(t) = self.selected() {
+            let description = Paragraph::new(&*t.description)
+                .wrap(tui::widgets::Wrap { trim: true })
+                .block(utils::default_block("Description"));
+            f.render_widget(description, data_chunks[0]);
+
+            t.metadata.draw_in_rect(f, &data_chunks[1]);
+        }
     }
 }

@@ -1,9 +1,9 @@
+mod components;
 mod keymap;
-mod types;
 mod ui;
 
+use components::app::App;
 use std::error::Error;
-use types::app::App;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let app = App::default();

@@ -1,4 +1,3 @@
-use super::metadata::TodoMetadata;
 use super::notification::{Notification, ToodMsg};
 use super::skimmer::Skimmer;
 use super::todo_list::TodoList;
@@ -37,18 +36,6 @@ impl App {
         self.todos.remove_current();
         self.save_to_disk().unwrap();
         self.notification.set(ToodMsg::warn("Removed todo"));
-    }
-
-    pub fn get_current_todo_data(&self) -> (String, Option<TodoMetadata>) {
-        if let Some(selected) = self.todos.state.selected() {
-            let selected_todo = &self.todos.todos[selected];
-            (
-                selected_todo.description.to_string(),
-                Some(selected_todo.metadata.clone()),
-            )
-        } else {
-            (String::default(), None)
-        }
     }
 
     pub fn save_to_disk(&self) -> io::Result<()> {

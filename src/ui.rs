@@ -1,10 +1,7 @@
-pub mod hint_bar;
-pub mod notification;
-mod utils;
-pub mod views;
-
+use crate::components::app::{App, InputMode};
+use crate::components::hint_bar::HintBar;
+use crate::components::Component;
 use crate::keymap::key_match;
-use crate::types::app::{App, InputMode};
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -53,7 +50,6 @@ pub fn run(mut app: App) -> io::Result<()> {
                     } else if key_match(&key, &app.keys.submit) {
                         app.add_todo();
                     } else if key_match(&key, &app.keys.add_description) {
-                        reset_terminal().unwrap();
                         app.edit_description();
                         terminal = init_terminal().unwrap();
                     } else if key_match(&key, &app.keys.mark_recurring) {
@@ -84,44 +80,22 @@ pub fn run(mut app: App) -> io::Result<()> {
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     // NOTE: we currently render the main application view
     //       no matter the mode we're in, so lets keep this here for now
-    views::todo_list(app, f);
+    app.todos.draw(f);
     match app.mode {
         InputMode::Normal => {
-            let binds = [
-                ("Up", app.keys.move_up.to_string()),
-                ("Down", app.keys.move_down.to_string()),
-                ("Add", app.keys.add_todo.to_string()),
-                ("Find", app.keys.find.to_string()),
-                ("Toggle", app.keys.toggle_completed.to_string()),
-                ("Edit", app.keys.edit_todo.to_string()),
-                ("Delete", app.keys.remove_todo.to_string()),
-                ("Quit", app.keys.quit.to_string()),
-            ];
-            hint_bar::draw(f, &binds);
+            HintBar::normal_mode(app).draw(f);
         }
         InputMode::Editing => {
-            views::edit_modal(app, f);
-            let binds = [
-                ("Back", app.keys.back.to_string()),
-                ("Edit desc", app.keys.add_description.to_string()),
-                ("Mark recurring", app.keys.mark_recurring.to_string()),
-                ("Save", app.keys.submit.to_string()),
-            ];
-            hint_bar::draw(f, &binds);
+            app.todos.new_todo.draw(f);
+            HintBar::edit_mode(app).draw(f);
         }
         InputMode::Find => {
-            views::fuzzy_matcher(app, f);
-            let binds = [
-                ("Back", app.keys.back.to_string()),
-                ("Up", app.keys.secondary_move_up.to_string()),
-                ("Down", app.keys.secondary_move_down.to_string()),
-                ("Select", app.keys.submit.to_string()),
-            ];
-            hint_bar::draw(f, &binds);
+            app.skimmer.draw(f);
+            HintBar::find_mode(app).draw(f);
         }
     }
     // draws notification if it exists
-    notification::draw(app, f);
+    app.notification.draw(f);
 }
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
