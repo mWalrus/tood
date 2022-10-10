@@ -50,7 +50,7 @@ pub fn todo_list<B: Backend>(app: &mut App, f: &mut Frame<B>) {
                 .bg(Color::Indexed(8))
                 .add_modifier(Modifier::BOLD),
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol("> ");
     f.render_stateful_widget(items, chunks[0], &mut app.todos.state);
 
     let data_chunks = Layout::default()
