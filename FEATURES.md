@@ -1,6 +1,8 @@
 # Features
 
 ## General
+- [ ] Move component rendering into each component
+  - Example: instead of `views::todo_list` do `app.todos.render()`
 
 ## Navigation
 - [x] Keyboard driven navigation (VIM binds currently)
