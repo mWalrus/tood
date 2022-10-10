@@ -16,6 +16,7 @@ use super::Component;
 
 pub struct SkimMatch {
     pub text: String,
+    pub position: usize,
     pub indices: Vec<usize>,
     score: i64,
 }
@@ -27,10 +28,11 @@ pub struct Skimmer {
     pub matches: Vec<SkimMatch>,
 }
 
-impl From<&Todo> for SkimMatch {
-    fn from(other: &Todo) -> Self {
+impl From<(usize, &Todo)> for SkimMatch {
+    fn from(other: (usize, &Todo)) -> Self {
         Self {
-            text: other.name.to_string(),
+            text: other.1.name.to_string(),
+            position: other.0,
             indices: Vec::new(),
             score: 0,
         }
@@ -43,12 +45,13 @@ impl Skimmer {
             input_backend::to_input_request(Event::Key(e)).and_then(|r| self.input.handle(r));
             let mut matches: Vec<SkimMatch> = Vec::new();
             let matcher = Box::new(SkimMatcherV2::default());
-            for todo in todos {
+            for (i, todo) in todos.iter().enumerate() {
                 if let Some((score, indices)) =
                     matcher.fuzzy_indices(&todo.name, self.input.value())
                 {
                     let m = SkimMatch {
                         text: todo.name.clone(),
+                        position: i,
                         indices,
                         score,
                     };
@@ -58,7 +61,7 @@ impl Skimmer {
             matches.sort_by(|a, b| a.score.cmp(&b.score));
             self.matches = matches;
         } else {
-            self.matches = todos.iter().map(SkimMatch::from).collect();
+            self.matches = todos.iter().enumerate().map(SkimMatch::from).collect();
         }
     }
 
@@ -88,6 +91,14 @@ impl Skimmer {
             None => 0,
         };
         self.state.select(Some(i));
+    }
+
+    pub fn selected_match(&self) -> Option<&SkimMatch> {
+        if let Some(i) = self.state.selected() {
+            Some(&self.matches[i])
+        } else {
+            None
+        }
     }
 }
 
