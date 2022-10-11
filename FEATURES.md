@@ -1,7 +1,7 @@
 # Features
 
 ## General
-- [ ] Move component rendering into each component
+- [x] Move component rendering into each component
   - Example: instead of `views::todo_list` do `app.todos.render()`
 
 ## Navigation
@@ -23,6 +23,11 @@
       - [ ] Parse due date from matches
 - [x] Recurring todos
   - Not sure if we want more functionality surrounding this.
+- [ ] Reorganize todos (move places)
+  - Note: I'm thinking that this could be done by selecting the todo and pressing `m` for "move"
+    which brings up a modal that lets the user input a number (1 = index 0 and so on). If the input
+    isnt a number or is out of bounds in regards to the todo list then we return an error message back
+    to app which will be displayed as a flash notification to the user.
 
 ## UI
 - [x] Clear coloring
