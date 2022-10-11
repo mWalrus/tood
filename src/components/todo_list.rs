@@ -1,3 +1,5 @@
+use std::io;
+
 use chrono::Local;
 use crossterm::event::{Event, KeyEvent};
 use serde::{Deserialize, Serialize};
@@ -31,6 +33,8 @@ pub struct TodoList {
     pub todos: Vec<Todo>,
     #[serde(skip, default)]
     pub new_todo: TodoInput,
+    #[serde(skip, default)]
+    move_mode: bool,
 }
 
 impl TodoList {
@@ -38,6 +42,11 @@ impl TodoList {
         let mut todo_list: TodoList = confy::load("tood", Some("todos")).unwrap();
         todo_list.correct_selection();
         todo_list
+    }
+
+    pub fn save_to_disk(&self) -> io::Result<()> {
+        confy::store("tood", Some("todos"), &self).unwrap();
+        Ok(())
     }
 
     pub fn next(&mut self) {
@@ -83,6 +92,7 @@ impl TodoList {
         if let Some(selected) = self.state.selected() {
             self.todos.remove(selected);
             self.correct_selection();
+            self.save_to_disk().unwrap();
         }
     }
 
@@ -94,15 +104,14 @@ impl TodoList {
             metadata: TodoMetadata::default(),
         };
         if self.new_todo.is_editing_existing {
-            if self.has_selection() {
-                let sel = self.state.selected().unwrap();
-                let original_metadata = self.todos[sel].metadata.clone();
+            if let Some(s) = self.state.selected() {
+                let original_metadata = self.todos[s].metadata.clone();
                 new_todo.metadata = TodoMetadata {
                     edited_at: Some(Local::now()),
                     recurring: self.new_todo.recurring,
                     ..original_metadata
                 };
-                let _ = std::mem::replace(&mut self.todos[sel], new_todo);
+                let _ = std::mem::replace(&mut self.todos[s], new_todo);
                 return;
             } else {
                 // NOTE: should be impossible to get here
@@ -110,31 +119,29 @@ impl TodoList {
             }
         }
         self.todos.push(new_todo);
+        self.save_to_disk().unwrap();
         if self.state.selected().is_none() {
             self.state.select(Some(0))
         }
     }
 
     pub fn selected(&self) -> Option<&Todo> {
-        if self.has_selection() {
-            return Some(&self.todos[self.state.selected().unwrap()]);
+        if let Some(s) = self.state.selected() {
+            return Some(&self.todos[s]);
         }
         None
     }
 
-    pub fn has_selection(&self) -> bool {
-        self.state.selected().is_some()
-    }
-
     pub fn toggle_completed(&mut self) -> Result<(), ()> {
-        if self.has_selection() {
-            let selected_todo = &self.todos[self.state.selected().unwrap()];
+        if let Some(s) = self.state.selected() {
+            let selected_todo = &self.todos[s];
             // dont toggle if the todo is recurring
             if selected_todo.metadata.recurring {
                 return Err(());
             }
             let finished = selected_todo.finished;
-            self.todos[self.state.selected().unwrap()].finished = !finished;
+            self.todos[s].finished = !finished;
+            self.save_to_disk().unwrap();
         }
         Ok(())
     }
@@ -147,23 +154,43 @@ impl TodoList {
         self.new_todo = TodoInput::default();
     }
 
-    pub fn populate_new_todo(&mut self) {
-        if !self.has_selection() {
-            return;
+    pub fn transfer_selected_to_input(&mut self) {
+        if let Some(s) = self.state.selected() {
+            let current_todo = &self.todos[s];
+            let new_todo = TodoInput {
+                name: Input::new(current_todo.name.to_string()),
+                description: current_todo.description.to_string(),
+                is_editing_existing: true,
+                recurring: current_todo.metadata.recurring,
+            };
+            self.new_todo = new_todo;
         }
-        let current_todo = &self.todos[self.state.selected().unwrap()];
-        let new_todo = TodoInput {
-            name: Input::new(current_todo.name.to_string()),
-            description: current_todo.description.to_string(),
-            is_editing_existing: true,
-            recurring: current_todo.metadata.recurring,
-        };
-        self.new_todo = new_todo;
     }
 
     pub fn toggle_recurring(&mut self) -> bool {
         self.new_todo.recurring = !self.new_todo.recurring;
         self.new_todo.recurring
+    }
+
+    pub fn move_todo_up(&mut self) {
+        if let Some(s) = self.state.selected() {
+            let new_index = if s == 0 { self.todos.len() - 1 } else { s - 1 };
+            self.todos.swap(s, new_index);
+            self.state.select(Some(new_index));
+            self.save_to_disk().unwrap();
+        }
+    }
+    pub fn move_todo_down(&mut self) {
+        if let Some(s) = self.state.selected() {
+            let new_index = if s == self.todos.len() - 1 { 0 } else { s + 1 };
+            self.todos.swap(s, new_index);
+            self.state.select(Some(new_index));
+            self.save_to_disk().unwrap();
+        }
+    }
+
+    pub fn toggle_move_mode(&mut self) {
+        self.move_mode = !self.move_mode;
     }
 }
 
@@ -199,8 +226,16 @@ impl Component for TodoList {
             })
             .collect();
 
+        let block_style = if self.move_mode {
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default()
+        };
+
         let items = List::new(list_items)
-            .block(utils::default_block("Todos"))
+            .block(utils::default_block("Todos").border_style(block_style))
             .highlight_style(
                 Style::default()
                     .bg(Color::Indexed(8))

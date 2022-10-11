@@ -32,10 +32,11 @@ pub fn run(mut app: App) -> io::Result<()> {
                     } else if key_match(&key, &app.keys.move_down) {
                         app.todos.next();
                     } else if key_match(&key, &app.keys.add_todo) {
-                        app.mode = InputMode::Editing;
-                    } else if key_match(&key, &app.keys.find) {
-                        app.mode = InputMode::Find;
-                        app.skimmer.skim(None, &app.todos.todos);
+                        app.enter_mode(InputMode::Edit);
+                    } else if key_match(&key, &app.keys.find_mode) {
+                        app.enter_mode(InputMode::Find);
+                    } else if key_match(&key, &app.keys.move_mode) {
+                        app.enter_mode(InputMode::Move);
                     } else if key_match(&key, &app.keys.edit_todo) {
                         app.edit_todo();
                     } else if key_match(&key, &app.keys.toggle_completed) {
@@ -44,9 +45,9 @@ pub fn run(mut app: App) -> io::Result<()> {
                         app.remove_current_todo();
                     }
                 }
-                InputMode::Editing => {
+                InputMode::Edit => {
                     if key_match(&key, &app.keys.back) {
-                        app.reset_state();
+                        app.enter_mode(InputMode::Normal);
                     } else if key_match(&key, &app.keys.submit) {
                         app.add_todo();
                     } else if key_match(&key, &app.keys.add_description) {
@@ -60,7 +61,7 @@ pub fn run(mut app: App) -> io::Result<()> {
                 }
                 InputMode::Find => {
                     if key_match(&key, &app.keys.back) {
-                        app.reset_state();
+                        app.enter_mode(InputMode::Normal);
                     } else if key_match(&key, &app.keys.secondary_move_up) {
                         app.skimmer.previous();
                     } else if key_match(&key, &app.keys.secondary_move_down) {
@@ -70,6 +71,15 @@ pub fn run(mut app: App) -> io::Result<()> {
                         app.mode = InputMode::Normal;
                     } else {
                         app.skimmer.skim(Some(key), &app.todos.todos);
+                    }
+                }
+                InputMode::Move => {
+                    if key_match(&key, &app.keys.submit) {
+                        app.enter_mode(InputMode::Normal);
+                    } else if key_match(&key, &app.keys.move_up) {
+                        app.todos.move_todo_up();
+                    } else if key_match(&key, &app.keys.move_down) {
+                        app.todos.move_todo_down();
                     }
                 }
             }
@@ -85,7 +95,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         InputMode::Normal => {
             HintBar::normal_mode(app).draw(f);
         }
-        InputMode::Editing => {
+        InputMode::Edit => {
             app.todos.new_todo.draw(f);
             HintBar::edit_mode(app).draw(f);
         }
@@ -93,6 +103,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             app.skimmer.draw(f);
             HintBar::find_mode(app).draw(f);
         }
+        InputMode::Move => HintBar::move_mode(app).draw(f),
     }
     // draws notification if it exists
     app.notification.draw(f);

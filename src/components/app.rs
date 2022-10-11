@@ -3,8 +3,6 @@ use super::skimmer::Skimmer;
 use super::todo_list::TodoList;
 use crate::keymap::ToodKeyList;
 
-use std::io;
-
 pub struct App {
     pub todos: TodoList,
     pub keys: ToodKeyList,
@@ -15,8 +13,9 @@ pub struct App {
 
 pub enum InputMode {
     Normal,
-    Editing,
+    Edit,
     Find,
+    Move,
 }
 
 impl Default for App {
@@ -34,13 +33,7 @@ impl Default for App {
 impl App {
     pub fn remove_current_todo(&mut self) {
         self.todos.remove_current();
-        self.save_to_disk().unwrap();
         self.notification.set(ToodMsg::warn("Removed todo"));
-    }
-
-    pub fn save_to_disk(&self) -> io::Result<()> {
-        confy::store("tood", Some("todos"), &self.todos).unwrap();
-        Ok(())
     }
 
     pub fn edit_description(&mut self) {
@@ -53,8 +46,32 @@ impl App {
             self.notification.set(ToodMsg::err("No todo selected"));
             return;
         }
-        self.todos.populate_new_todo();
-        self.mode = InputMode::Editing;
+        self.todos.transfer_selected_to_input();
+        self.enter_mode(InputMode::Edit);
+    }
+
+    pub fn enter_mode(&mut self, mode: InputMode) {
+        let msg = match mode {
+            InputMode::Edit => {
+                self.mode = mode;
+                "Entered edit mode"
+            }
+            InputMode::Find => {
+                self.mode = mode;
+                self.skimmer.skim(None, &self.todos.todos);
+                "Entered find mode"
+            }
+            InputMode::Move => {
+                self.mode = mode;
+                self.todos.toggle_move_mode();
+                "Entered move mode"
+            }
+            InputMode::Normal => {
+                self.reset_state();
+                "Entered normal mode"
+            }
+        };
+        self.notification.set(ToodMsg::info(msg));
     }
 
     pub fn toggle_todo_completed(&mut self) {
@@ -63,7 +80,6 @@ impl App {
                 .set(ToodMsg::warn("Cannot mark recurring todos as completed"));
             return;
         }
-        self.save_to_disk().unwrap();
         let toggle_msg = if self.todos.selected().unwrap().finished {
             "Marked todo completed"
         } else {
@@ -74,7 +90,6 @@ impl App {
 
     pub fn add_todo(&mut self) {
         self.todos.add_todo();
-        self.save_to_disk().unwrap();
         let action = if self.todos.new_todo.is_editing_existing {
             "Edited existing todo"
         } else {
@@ -85,9 +100,13 @@ impl App {
     }
 
     pub fn reset_state(&mut self) {
+        match self.mode {
+            InputMode::Move => self.todos.toggle_move_mode(),
+            InputMode::Edit => self.todos.reset_input(),
+            InputMode::Find => self.skimmer = Skimmer::default(),
+            _ => {}
+        }
         self.mode = InputMode::Normal;
-        self.todos.reset_input();
-        self.skimmer = Skimmer::default();
     }
 
     pub fn load_fuzzy_selection(&mut self) {

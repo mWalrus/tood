@@ -35,7 +35,11 @@ impl HintBar {
             },
             Hint {
                 name: "Find",
-                bind: app.keys.find.to_string(),
+                bind: app.keys.find_mode.to_string(),
+            },
+            Hint {
+                name: "Move",
+                bind: app.keys.move_mode.to_string(),
             },
             Hint {
                 name: "Toggle",
@@ -94,6 +98,24 @@ impl HintBar {
             Hint {
                 name: "Select",
                 bind: app.keys.submit.to_string(),
+            },
+        ];
+        Self { hints }
+    }
+
+    pub fn move_mode(app: &App) -> Self {
+        let hints = vec![
+            Hint {
+                name: "Save",
+                bind: app.keys.submit.to_string(),
+            },
+            Hint {
+                name: "Up",
+                bind: app.keys.move_up.to_string(),
+            },
+            Hint {
+                name: "Down",
+                bind: app.keys.move_down.to_string(),
             },
         ];
         Self { hints }

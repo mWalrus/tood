@@ -59,7 +59,8 @@ pub struct ToodKeyList {
     pub remove_todo: ToodKeyEvent,
     pub mark_recurring: ToodKeyEvent,
     pub submit: ToodKeyEvent,
-    pub find: ToodKeyEvent,
+    pub find_mode: ToodKeyEvent,
+    pub move_mode: ToodKeyEvent,
     pub back: ToodKeyEvent,
     pub quit: ToodKeyEvent,
 }
@@ -79,7 +80,8 @@ impl Default for ToodKeyList {
             remove_todo:         ToodKeyEvent::new(KeyCode::Char('d'), KeyModifiers::empty()),
             mark_recurring:      ToodKeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
             submit:              ToodKeyEvent::new(KeyCode::Enter,     KeyModifiers::empty()),
-            find:                ToodKeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()),
+            find_mode:           ToodKeyEvent::new(KeyCode::Char('f'), KeyModifiers::empty()),
+            move_mode:           ToodKeyEvent::new(KeyCode::Char('m'), KeyModifiers::empty()),
             back:                ToodKeyEvent::new(KeyCode::Esc,       KeyModifiers::empty()),
             quit:                ToodKeyEvent::new(KeyCode::Char('q'), KeyModifiers::empty()),
         }
