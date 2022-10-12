@@ -101,7 +101,10 @@ impl TodoList {
             finished: false,
             name: self.new_todo.name.value().into(),
             description: self.new_todo.description.clone(),
-            metadata: TodoMetadata::default(),
+            metadata: TodoMetadata {
+                recurring: self.new_todo.recurring,
+                ..Default::default()
+            },
         };
         if self.new_todo.is_editing_existing {
             if let Some(s) = self.state.selected() {
@@ -118,6 +121,9 @@ impl TodoList {
                 // NOTE: should be impossible to get here
                 unreachable!()
             }
+        } else {
+            // move selected to newly added todo
+            self.state.select(Some(self.todos.len()));
         }
         self.todos.push(new_todo);
         if self.state.selected().is_none() {
