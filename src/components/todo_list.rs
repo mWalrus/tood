@@ -257,6 +257,15 @@ impl Component for TodoList {
             f.render_widget(description, data_chunks[0]);
 
             t.metadata.draw_in_rect(f, &data_chunks[1]);
+        } else {
+            let placeholder1 = Paragraph::new("")
+                .wrap(tui::widgets::Wrap { trim: true })
+                .block(utils::default_block("Description"));
+            let placeholder2 = Paragraph::new("")
+                .wrap(tui::widgets::Wrap { trim: true })
+                .block(utils::default_block("Metadata"));
+            f.render_widget(placeholder1, data_chunks[0]);
+            f.render_widget(placeholder2, data_chunks[1]);
         }
     }
 }
