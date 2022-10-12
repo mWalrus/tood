@@ -1,7 +1,4 @@
-use super::{
-    utils::{self, serialize_local_date, serialize_optional_local_date},
-    Component,
-};
+use super::{utils, Component};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use tui::{
@@ -17,13 +14,7 @@ static TIME_FORMAT: &str = "%D %-I:%M %P";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TodoMetadata {
-    #[serde(serialize_with = "serialize_local_date")]
     pub added_at: DateTime<Local>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_optional_local_date"
-    )]
     pub edited_at: Option<DateTime<Local>>,
     pub recurring: bool,
 }

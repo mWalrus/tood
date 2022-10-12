@@ -112,6 +112,7 @@ impl TodoList {
                     ..original_metadata
                 };
                 let _ = std::mem::replace(&mut self.todos[s], new_todo);
+                self.save_to_disk().unwrap();
                 return;
             } else {
                 // NOTE: should be impossible to get here
@@ -119,10 +120,10 @@ impl TodoList {
             }
         }
         self.todos.push(new_todo);
-        self.save_to_disk().unwrap();
         if self.state.selected().is_none() {
             self.state.select(Some(0))
         }
+        self.save_to_disk().unwrap();
     }
 
     pub fn selected(&self) -> Option<&Todo> {
