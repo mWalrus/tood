@@ -89,11 +89,11 @@ impl HintBar {
             },
             Hint {
                 name: "Up",
-                bind: app.keys.secondary_move_up.to_string(),
+                bind: app.keys.alt_move_up.to_string(),
             },
             Hint {
                 name: "Down",
-                bind: app.keys.secondary_move_down.to_string(),
+                bind: app.keys.alt_move_down.to_string(),
             },
             Hint {
                 name: "Select",

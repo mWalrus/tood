@@ -1,7 +1,7 @@
 use super::notification::{Notification, ToodMsg};
 use super::skimmer::Skimmer;
 use super::todo_list::TodoList;
-use crate::keymap::ToodKeyList;
+use crate::keys::ToodKeyList;
 
 pub struct App {
     pub todos: TodoList,
@@ -22,7 +22,7 @@ impl Default for App {
     fn default() -> App {
         App {
             todos: TodoList::load(),
-            keys: ToodKeyList::default(),
+            keys: ToodKeyList::init(),
             mode: InputMode::Normal,
             skimmer: Skimmer::default(),
             notification: Notification::new(),

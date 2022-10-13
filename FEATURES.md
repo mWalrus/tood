@@ -8,7 +8,7 @@
 ## Navigation
 - [x] Keyboard driven navigation (VIM binds currently)
 - [x] Context based keybind hint bar (bottom of screen)
-- [ ] Configurable keybinds
+- [x] Configurable keybinds
 - [ ] Scroll through todo description
 
 ## Todo Manipulation

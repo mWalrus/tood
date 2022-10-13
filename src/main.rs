@@ -1,5 +1,5 @@
 mod components;
-mod keymap;
+mod keys;
 mod ui;
 
 use components::app::App;

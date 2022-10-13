@@ -1,5 +1,9 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use serde::{Deserialize, Serialize};
 
+use super::key_config::KeyConfig;
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ToodKeyEvent {
     pub code: KeyCode,
     pub modifiers: KeyModifiers,
@@ -16,12 +20,16 @@ impl ToString for ToodKeyEvent {
         let key = match self.code {
             KeyCode::Char(c) if c == ' ' => '˽',
             KeyCode::Char(c) => c,
-            KeyCode::Tab | KeyCode::BackTab => '⇥',
+            KeyCode::Tab => '⇥',
+            KeyCode::BackTab => '⇤',
             KeyCode::Esc => '⎋',
             KeyCode::Enter => '⏎',
+            KeyCode::Up => '▲',
+            KeyCode::Down => '▼',
             _ => '#',
         };
         match self.modifiers {
+            KeyModifiers::SHIFT if self.code == KeyCode::BackTab => key.to_string(),
             KeyModifiers::SHIFT => format!("⇪{}", key.to_uppercase()),
             KeyModifiers::CONTROL => format!("^{key}"),
             _ => key.to_string(),
@@ -47,11 +55,12 @@ impl From<&ToodKeyEvent> for KeyEvent {
     }
 }
 
+#[derive(Debug)]
 pub struct ToodKeyList {
     pub move_up: ToodKeyEvent,
     pub move_down: ToodKeyEvent,
-    pub secondary_move_up: ToodKeyEvent,
-    pub secondary_move_down: ToodKeyEvent,
+    pub alt_move_up: ToodKeyEvent,
+    pub alt_move_down: ToodKeyEvent,
     pub toggle_completed: ToodKeyEvent,
     pub add_todo: ToodKeyEvent,
     pub add_description: ToodKeyEvent,
@@ -68,11 +77,11 @@ pub struct ToodKeyList {
 #[rustfmt::skip]
 impl Default for ToodKeyList {
     fn default() -> Self {
-        Self {
+       Self {
             move_up:             ToodKeyEvent::new(KeyCode::Char('k'), KeyModifiers::empty()),
             move_down:           ToodKeyEvent::new(KeyCode::Char('j'), KeyModifiers::empty()),
-            secondary_move_up:   ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::SHIFT),
-            secondary_move_down: ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
+            alt_move_up:         ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::SHIFT),
+            alt_move_down:       ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
             toggle_completed:    ToodKeyEvent::new(KeyCode::Char(' '), KeyModifiers::empty()),
             add_todo:            ToodKeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()),
             add_description:     ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
@@ -84,6 +93,16 @@ impl Default for ToodKeyList {
             move_mode:           ToodKeyEvent::new(KeyCode::Char('m'), KeyModifiers::empty()),
             back:                ToodKeyEvent::new(KeyCode::Esc,       KeyModifiers::empty()),
             quit:                ToodKeyEvent::new(KeyCode::Char('q'), KeyModifiers::empty()),
+        }
+    }
+}
+
+impl ToodKeyList {
+    pub fn init() -> Self {
+        if let Ok(cfg) = KeyConfig::read_from_file() {
+            cfg.to_list()
+        } else {
+            Self::default()
         }
     }
 }

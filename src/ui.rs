@@ -1,7 +1,7 @@
 use crate::components::app::{App, InputMode};
 use crate::components::hint_bar::HintBar;
 use crate::components::Component;
-use crate::keymap::key_match;
+use crate::keys::key_match;
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -62,9 +62,9 @@ pub fn run(mut app: App) -> io::Result<()> {
                 InputMode::Find => {
                     if key_match(&key, &app.keys.back) {
                         app.enter_mode(InputMode::Normal);
-                    } else if key_match(&key, &app.keys.secondary_move_up) {
+                    } else if key_match(&key, &app.keys.alt_move_up) {
                         app.skimmer.previous();
-                    } else if key_match(&key, &app.keys.secondary_move_down) {
+                    } else if key_match(&key, &app.keys.alt_move_down) {
                         app.skimmer.next();
                     } else if key_match(&key, &app.keys.submit) {
                         app.load_fuzzy_selection();

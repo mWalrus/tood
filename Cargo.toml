@@ -7,8 +7,7 @@ edition = "2021"
 
 [dependencies]
 chrono = { version = "0.4.22", features = ["serde"] }
-# confy = "0.5.0"
-crossterm = "0.25.0"
+crossterm = { version = "0.25.0", features = ["serde"] }
 edit = "0.1.4"
 fuzzy-matcher = "0.3.7"
 serde = { version = "1.0.145", features = ["derive"] }
