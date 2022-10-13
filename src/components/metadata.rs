@@ -1,4 +1,7 @@
-use super::{utils, Component};
+use super::{
+    utils::{self, Dim},
+    Component,
+};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use tui::{
@@ -56,7 +59,7 @@ impl Default for TodoMetadata {
 }
 
 impl Component for TodoMetadata {
-    fn draw_in_rect<B: Backend>(&self, f: &mut Frame<B>, r: &Rect) {
+    fn draw_in_rect<B: Backend>(&self, f: &mut Frame<B>, r: &Rect, dim: bool) {
         let mut list_items: Vec<ListItem> = Vec::new();
         for md in self.to_formatted() {
             let spans = Spans::from(vec![
@@ -65,7 +68,7 @@ impl Component for TodoMetadata {
             ]);
             list_items.push(ListItem::new(spans));
         }
-        let list = List::new(list_items).block(utils::default_block("Metadata"));
+        let list = List::new(list_items).block(utils::default_block("Metadata").dim(dim));
         f.render_widget(list, *r);
     }
 }

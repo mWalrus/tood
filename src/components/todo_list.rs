@@ -14,6 +14,7 @@ use tui_input::Input;
 
 use super::metadata::TodoMetadata;
 use super::todo_input::TodoInput;
+use super::utils::Dim;
 use super::{utils, Component};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
@@ -202,7 +203,7 @@ impl TodoList {
 }
 
 impl Component for TodoList {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
+    fn draw_dimmed<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool) {
         let size = f.size();
         let chunks = Layout::default()
             .direction(tui::layout::Direction::Vertical)
@@ -220,20 +221,25 @@ impl Component for TodoList {
             .todos
             .iter()
             .map(|t| {
-                let (finished, fg_style) = if t.metadata.recurring {
+                let (finished, mut fg_style) = if t.metadata.recurring {
                     ("[∞] ", Style::default().fg(Color::Blue))
                 } else if t.finished {
                     ("[x] ", Style::default().fg(Color::Green))
                 } else {
                     ("[ ] ", Style::default())
                 };
+
+                if dim {
+                    fg_style = Style::default();
+                }
+
                 let line = finished.to_string() + t.name.as_ref();
                 let line = vec![Spans::from(line)];
                 ListItem::new(line).style(fg_style)
             })
             .collect();
 
-        let block_style = if self.move_mode {
+        let border_style = if self.move_mode {
             Style::default()
                 .fg(Color::Green)
                 .add_modifier(Modifier::BOLD)
@@ -241,13 +247,21 @@ impl Component for TodoList {
             Style::default()
         };
 
+        let highlight_style = if dim {
+            Style::default()
+        } else {
+            Style::default()
+                .bg(Color::Indexed(8))
+                .add_modifier(Modifier::BOLD)
+        };
+
         let items = List::new(list_items)
-            .block(utils::default_block("Todos").border_style(block_style))
-            .highlight_style(
-                Style::default()
-                    .bg(Color::Indexed(8))
-                    .add_modifier(Modifier::BOLD),
+            .block(
+                utils::default_block("Todos")
+                    .border_style(border_style)
+                    .dim(dim),
             )
+            .highlight_style(highlight_style)
             .highlight_symbol("> ");
         f.render_stateful_widget(items, chunks[0], &mut self.state);
 
@@ -259,13 +273,14 @@ impl Component for TodoList {
         if let Some(t) = self.selected() {
             let description = Paragraph::new(&*t.description)
                 .wrap(tui::widgets::Wrap { trim: true })
-                .block(utils::default_block("Description"));
+                .block(utils::default_block("Description").dim(dim));
             f.render_widget(description, data_chunks[0]);
 
-            t.metadata.draw_in_rect(f, &data_chunks[1]);
+            t.metadata.draw_in_rect(f, &data_chunks[1], dim);
         } else {
-            let placeholder1 = Paragraph::new("").block(utils::default_block("Description"));
-            let placeholder2 = Paragraph::new("").block(utils::default_block("Metadata"));
+            let placeholder1 =
+                Paragraph::new("").block(utils::default_block("Description").dim(dim));
+            let placeholder2 = Paragraph::new("").block(utils::default_block("Metadata").dim(dim));
             f.render_widget(placeholder1, data_chunks[0]);
             f.render_widget(placeholder2, data_chunks[1]);
         }
