@@ -1,17 +1,5 @@
-use super::{
-    utils::{self, Dim},
-    Component,
-};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
-use tui::{
-    backend::Backend,
-    layout::Rect,
-    style::{Modifier, Style},
-    text::{Span, Spans},
-    widgets::{List, ListItem},
-    Frame,
-};
 
 static TIME_FORMAT: &str = "%D %-I:%M %P";
 
@@ -23,7 +11,7 @@ pub struct TodoMetadata {
 }
 
 impl TodoMetadata {
-    fn to_formatted(&self) -> Vec<(&'static str, String)> {
+    pub fn to_formatted(&self) -> Vec<(&'static str, String)> {
         #[inline(always)]
         fn yes_no(b: bool) -> &'static str {
             if b {
@@ -55,20 +43,5 @@ impl Default for TodoMetadata {
             edited_at: None,
             recurring: false,
         }
-    }
-}
-
-impl Component for TodoMetadata {
-    fn draw_in_rect<B: Backend>(&self, f: &mut Frame<B>, r: &Rect, dim: bool) {
-        let mut list_items: Vec<ListItem> = Vec::new();
-        for md in self.to_formatted() {
-            let spans = Spans::from(vec![
-                Span::styled(md.0, Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(md.1.to_string()),
-            ]);
-            list_items.push(ListItem::new(spans));
-        }
-        let list = List::new(list_items).block(utils::default_block("Metadata").dim(dim));
-        f.render_widget(list, *r);
     }
 }

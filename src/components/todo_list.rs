@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
-use tui::text::Spans;
+use tui::text::{Span, Spans};
 use tui::widgets::{List, ListItem, ListState, Paragraph};
 use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
@@ -244,7 +244,7 @@ impl Component for TodoList {
                 .fg(Color::Green)
                 .add_modifier(Modifier::BOLD)
         } else {
-            Style::default()
+            Style::default().add_modifier(Modifier::BOLD)
         };
 
         let highlight_style = if dim {
@@ -276,7 +276,17 @@ impl Component for TodoList {
                 .block(utils::default_block("Description").dim(dim));
             f.render_widget(description, data_chunks[0]);
 
-            t.metadata.draw_in_rect(f, &data_chunks[1], dim);
+            let mut list_items: Vec<ListItem> = Vec::new();
+            for md in t.metadata.to_formatted() {
+                let spans = Spans::from(vec![
+                    Span::styled(md.0, Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(md.1.to_string()),
+                ]);
+                list_items.push(ListItem::new(spans));
+            }
+            let metadata_list =
+                List::new(list_items).block(utils::default_block("Metadata").dim(dim));
+            f.render_widget(metadata_list, data_chunks[1]);
         } else {
             let placeholder1 =
                 Paragraph::new("").block(utils::default_block("Description").dim(dim));

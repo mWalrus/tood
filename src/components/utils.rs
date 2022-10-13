@@ -1,6 +1,6 @@
 use tui::{
     layout::Rect,
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     widgets::{Block, Borders},
 };
 
@@ -35,7 +35,11 @@ impl Dim for Block<'static> {
 
 pub fn default_block(title: &'static str) -> Block {
     Block::default()
-        .border_style(Style::default().fg(Color::White))
+        .border_style(
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .title(title)
 }
