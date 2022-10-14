@@ -32,6 +32,7 @@
 - [x] Flash messages communicating action outcomes
 - [ ] Hint bar height adjustment when width is too small to fit it
 - [ ] Style component holding the coloring for different components
+- [x] Gray out borders of background view when rendering modals
 
 ## Fuzzy finder
 - [x] Fuzzy todo finder

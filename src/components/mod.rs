@@ -1,4 +1,4 @@
-use tui::{backend::Backend, layout::Rect, Frame};
+use tui::{backend::Backend, Frame};
 
 pub mod app;
 pub mod hint_bar;
@@ -11,5 +11,5 @@ mod utils;
 
 pub trait Component {
     fn draw<B: Backend>(&mut self, _f: &mut Frame<B>) {}
-    fn draw_in_rect<B: Backend>(&self, _f: &mut Frame<B>, _r: &Rect) {}
+    fn draw_dimmed<B: Backend>(&mut self, _f: &mut Frame<B>, _dim: bool) {}
 }
