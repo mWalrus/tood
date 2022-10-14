@@ -1,5 +1,7 @@
 use tui::{backend::Backend, Frame};
 
+use hint_bar::HintBar;
+
 pub mod app;
 pub mod hint_bar;
 pub mod metadata;
@@ -11,5 +13,8 @@ mod utils;
 
 pub trait Component {
     fn draw<B: Backend>(&mut self, _f: &mut Frame<B>) {}
-    fn draw_dimmed<B: Backend>(&mut self, _f: &mut Frame<B>, _dim: bool) {}
+}
+
+pub trait MainComponent {
+    fn draw<B: Backend>(&mut self, _f: &mut Frame<B>, _dim: bool, _hb: HintBar) {}
 }

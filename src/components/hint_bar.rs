@@ -1,13 +1,11 @@
 use tui::{
-    backend::Backend,
+    buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph},
-    Frame,
+    widgets::Widget,
 };
 
-use super::{app::App, Component};
+use super::app::App;
 
 pub struct HintBar {
     hints: Vec<Hint>,
@@ -16,6 +14,18 @@ pub struct HintBar {
 pub struct Hint {
     name: &'static str,
     bind: String,
+}
+
+impl From<&Hint> for String {
+    fn from(other: &Hint) -> Self {
+        format!("{} [{}]", other.name, other.bind)
+    }
+}
+
+impl Hint {
+    fn len(&self) -> usize {
+        String::from(self).chars().count()
+    }
 }
 
 impl HintBar {
@@ -120,32 +130,51 @@ impl HintBar {
         ];
         Self { hints }
     }
+
+    pub fn height_required(&self, width: u16, height: u16) -> u16 {
+        let (mut x, mut y) = (0u16, 1u16);
+        for hint in self.hints.iter() {
+            // dont extend height to infinity
+            if y == height {
+                break;
+            }
+            let hl = hint.len() as u16;
+            if x + hl + 1 > width {
+                x = 0;
+                y += 1;
+            } else {
+                x += hl + 1;
+            }
+        }
+        y
+    }
 }
 
-impl Component for HintBar {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
-        let size = f.size();
-        let rect = Rect {
-            x: 0,
-            y: size.height - 1,
-            width: size.width,
-            height: 1,
-        };
-        let mut spans: Vec<Span> = Vec::new();
-        spans.push(Span::raw(" "));
+impl Widget for HintBar {
+    fn render(self, rect: Rect, buf: &mut Buffer) {
+        // TODO
+        let (mut offset_x, mut offset_y) = (rect.x, rect.y);
         for hint in self.hints.iter() {
-            spans.push(Span::styled(
-                format!("{} [{}]", hint.name, hint.bind),
+            let hl = hint.len() as u16;
+            if offset_x + hl > rect.width {
+                offset_y += 1;
+                offset_x = rect.x;
+            }
+
+            // max height reached, stop rendering
+            if offset_y == rect.y + rect.height {
+                break;
+            }
+
+            buf.set_string(
+                offset_x,
+                offset_y,
+                String::from(hint),
                 Style::default()
                     .bg(Color::Blue)
                     .add_modifier(Modifier::BOLD),
-            ));
-            // space between hints
-            spans.push(Span::raw(" "));
+            );
+            offset_x += hl + 1;
         }
-        let bind_bar = Paragraph::new(Spans::from(spans))
-            .wrap(tui::widgets::Wrap { trim: false })
-            .block(Block::default().borders(Borders::NONE));
-        f.render_widget(bind_bar, rect);
     }
 }

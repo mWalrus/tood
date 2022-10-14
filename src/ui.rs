@@ -1,6 +1,6 @@
 use crate::components::app::{App, InputMode};
 use crate::components::hint_bar::HintBar;
-use crate::components::Component;
+use crate::components::{Component, MainComponent};
 use crate::keys::key_match;
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
@@ -88,26 +88,20 @@ pub fn run(mut app: App) -> io::Result<()> {
 }
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    // NOTE: we currently render the main application view
-    //       no matter the mode we're in, so lets keep this here for now
     match app.mode {
         InputMode::Normal => {
-            app.todos.draw_dimmed(f, false);
-            HintBar::normal_mode(app).draw(f);
+            app.todos.draw(f, false, HintBar::normal_mode(app));
         }
         InputMode::Edit => {
-            app.todos.draw_dimmed(f, true);
+            app.todos.draw(f, true, HintBar::edit_mode(app));
             app.todos.new_todo.draw(f);
-            HintBar::edit_mode(app).draw(f);
         }
         InputMode::Find => {
-            app.todos.draw_dimmed(f, true);
+            app.todos.draw(f, true, HintBar::find_mode(app));
             app.skimmer.draw(f);
-            HintBar::find_mode(app).draw(f);
         }
         InputMode::Move => {
-            app.todos.draw_dimmed(f, false);
-            HintBar::move_mode(app).draw(f)
+            app.todos.draw(f, false, HintBar::move_mode(app));
         }
     }
     // draws notification if it exists

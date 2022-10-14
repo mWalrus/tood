@@ -12,10 +12,11 @@ use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 
+use super::hint_bar::HintBar;
 use super::metadata::TodoMetadata;
 use super::todo_input::TodoInput;
 use super::utils::Dim;
-use super::{utils, Component};
+use super::{utils, MainComponent};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {
@@ -202,8 +203,8 @@ impl TodoList {
     }
 }
 
-impl Component for TodoList {
-    fn draw_dimmed<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool) {
+impl MainComponent for TodoList {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool, hb: HintBar) {
         let size = f.size();
         let chunks = Layout::default()
             .direction(tui::layout::Direction::Vertical)
@@ -211,7 +212,7 @@ impl Component for TodoList {
                 [
                     Constraint::Percentage(60),
                     Constraint::Min(3),
-                    Constraint::Length(1),
+                    Constraint::Length(hb.height_required(size.width - 2, size.height)),
                 ]
                 .as_ref(),
             )
@@ -294,5 +295,6 @@ impl Component for TodoList {
             f.render_widget(placeholder1, data_chunks[0]);
             f.render_widget(placeholder2, data_chunks[1]);
         }
+        f.render_widget(hb, chunks[2]);
     }
 }
