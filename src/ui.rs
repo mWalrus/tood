@@ -88,7 +88,6 @@ pub fn run(mut app: App) -> io::Result<()> {
 }
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let size = f.size();
     match app.mode {
         InputMode::Normal => {
             app.todos.draw(f, false, HintBar::normal_mode(app));
