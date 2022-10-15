@@ -63,6 +63,10 @@ impl Skimmer {
         } else {
             self.matches = todos.iter().enumerate().map(SkimMatch::from).collect();
         }
+
+        if !self.matches.is_empty() {
+            self.state.select(Some(0));
+        }
     }
 
     pub fn next(&mut self) {
@@ -153,7 +157,8 @@ impl Component for Skimmer {
                 Style::default()
                     .bg(Color::Indexed(8))
                     .add_modifier(Modifier::BOLD),
-            );
+            )
+            .highlight_symbol("> ");
         f.render_widget(Clear, chunks[0]);
         f.render_widget(Clear, chunks[1]);
 
