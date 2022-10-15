@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::{Deserialize, Serialize};
 
@@ -56,8 +54,6 @@ impl From<&ToodKeyEvent> for KeyEvent {
         Self::new(other.code, other.modifiers)
     }
 }
-
-pub type SharedKeyList = Rc<ToodKeyList>;
 
 #[derive(Debug)]
 pub struct ToodKeyList {

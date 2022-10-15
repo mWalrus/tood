@@ -5,7 +5,7 @@ use tui::{
     widgets::Widget,
 };
 
-use super::app::App;
+use crate::components::app::App;
 
 pub struct HintBar {
     hints: Vec<Hint>,

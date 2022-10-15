@@ -12,11 +12,11 @@ use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 
-use super::hint_bar::HintBar;
 use super::metadata::TodoMetadata;
 use super::todo_input::TodoInput;
 use super::utils::Dim;
 use super::{utils, MainComponent};
+use crate::widgets::hint_bar::HintBar;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {

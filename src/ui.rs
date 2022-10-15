@@ -1,7 +1,7 @@
 use crate::components::app::{App, InputMode};
-use crate::components::hint_bar::HintBar;
 use crate::components::{Component, MainComponent};
 use crate::keys::key_match;
+use crate::widgets::hint_bar::HintBar;
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
