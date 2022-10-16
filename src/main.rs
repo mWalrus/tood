@@ -1,6 +1,7 @@
 mod components;
 mod keys;
 mod ui;
+mod widgets;
 
 use components::app::App;
 use std::error::Error;

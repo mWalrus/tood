@@ -1,7 +1,7 @@
 use crate::components::app::{App, InputMode};
-use crate::components::hint_bar::HintBar;
 use crate::components::{Component, MainComponent};
 use crate::keys::key_match;
+use crate::widgets::hint_bar::HintBar;
 use crossterm::event::{self, Event};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -55,6 +55,24 @@ pub fn run(mut app: App) -> io::Result<()> {
                         terminal = init_terminal().unwrap();
                     } else if key_match(&key, &app.keys.mark_recurring) {
                         app.toggle_recurring();
+                    } else if key_match(&key, &app.keys.open_calendar) {
+                        app.todos.new_todo.calendar.toggle_visible();
+                    } else if app.todos.new_todo.calendar.is_visible
+                        && key_match(&key, &app.keys.move_left)
+                    {
+                        app.todos.new_todo.cal_left();
+                    } else if app.todos.new_todo.calendar.is_visible
+                        && key_match(&key, &app.keys.move_right)
+                    {
+                        app.todos.new_todo.cal_right();
+                    } else if app.todos.new_todo.calendar.is_visible
+                        && key_match(&key, &app.keys.move_up)
+                    {
+                        app.todos.new_todo.cal_up();
+                    } else if app.todos.new_todo.calendar.is_visible
+                        && key_match(&key, &app.keys.move_down)
+                    {
+                        app.todos.new_todo.cal_down();
                     } else {
                         app.todos.handle_input(key);
                     }

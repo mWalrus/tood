@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::{Deserialize, Serialize};
 
@@ -57,18 +55,19 @@ impl From<&ToodKeyEvent> for KeyEvent {
     }
 }
 
-pub type SharedKeyList = Rc<ToodKeyList>;
-
 #[derive(Debug)]
 pub struct ToodKeyList {
     pub move_up: ToodKeyEvent,
     pub move_down: ToodKeyEvent,
+    pub move_left: ToodKeyEvent,
+    pub move_right: ToodKeyEvent,
     pub alt_move_up: ToodKeyEvent,
     pub alt_move_down: ToodKeyEvent,
     pub toggle_completed: ToodKeyEvent,
     pub add_todo: ToodKeyEvent,
     pub add_description: ToodKeyEvent,
     pub edit_todo: ToodKeyEvent,
+    pub open_calendar: ToodKeyEvent,
     pub remove_todo: ToodKeyEvent,
     pub mark_recurring: ToodKeyEvent,
     pub submit: ToodKeyEvent,
@@ -84,12 +83,15 @@ impl Default for ToodKeyList {
        Self {
             move_up:             ToodKeyEvent::new(KeyCode::Char('k'), KeyModifiers::empty()),
             move_down:           ToodKeyEvent::new(KeyCode::Char('j'), KeyModifiers::empty()),
+            move_left:           ToodKeyEvent::new(KeyCode::Char('h'), KeyModifiers::empty()),
+            move_right:          ToodKeyEvent::new(KeyCode::Char('l'), KeyModifiers::empty()),
             alt_move_up:         ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::SHIFT),
             alt_move_down:       ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
             toggle_completed:    ToodKeyEvent::new(KeyCode::Char(' '), KeyModifiers::empty()),
             add_todo:            ToodKeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()),
             add_description:     ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
             edit_todo:           ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()),
+            open_calendar:       ToodKeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
             remove_todo:         ToodKeyEvent::new(KeyCode::Char('d'), KeyModifiers::empty()),
             mark_recurring:      ToodKeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
             submit:              ToodKeyEvent::new(KeyCode::Enter,     KeyModifiers::empty()),

@@ -12,11 +12,12 @@ use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 
-use super::hint_bar::HintBar;
 use super::metadata::TodoMetadata;
 use super::todo_input::TodoInput;
 use super::utils::Dim;
 use super::{utils, MainComponent};
+use crate::widgets::calendar::Calendar;
+use crate::widgets::hint_bar::HintBar;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {
@@ -171,6 +172,8 @@ impl TodoList {
                 description: current_todo.description.to_string(),
                 is_editing_existing: true,
                 recurring: current_todo.metadata.recurring,
+                calendar_state: ListState::default(),
+                calendar: Calendar::default(),
             };
             self.new_todo = new_todo;
         }
