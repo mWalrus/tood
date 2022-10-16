@@ -152,7 +152,6 @@ impl HintBar {
 
 impl Widget for HintBar {
     fn render(self, rect: Rect, buf: &mut Buffer) {
-        // TODO
         let (mut offset_x, mut offset_y) = (rect.x, rect.y);
         for hint in self.hints.iter() {
             let hl = hint.len() as u16;

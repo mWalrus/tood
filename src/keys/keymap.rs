@@ -59,6 +59,8 @@ impl From<&ToodKeyEvent> for KeyEvent {
 pub struct ToodKeyList {
     pub move_up: ToodKeyEvent,
     pub move_down: ToodKeyEvent,
+    pub move_left: ToodKeyEvent,
+    pub move_right: ToodKeyEvent,
     pub alt_move_up: ToodKeyEvent,
     pub alt_move_down: ToodKeyEvent,
     pub toggle_completed: ToodKeyEvent,
@@ -81,6 +83,8 @@ impl Default for ToodKeyList {
        Self {
             move_up:             ToodKeyEvent::new(KeyCode::Char('k'), KeyModifiers::empty()),
             move_down:           ToodKeyEvent::new(KeyCode::Char('j'), KeyModifiers::empty()),
+            move_left:           ToodKeyEvent::new(KeyCode::Char('h'), KeyModifiers::empty()),
+            move_right:          ToodKeyEvent::new(KeyCode::Char('l'), KeyModifiers::empty()),
             alt_move_up:         ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::SHIFT),
             alt_move_down:       ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
             toggle_completed:    ToodKeyEvent::new(KeyCode::Char(' '), KeyModifiers::empty()),

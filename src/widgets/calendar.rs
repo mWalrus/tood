@@ -1,17 +1,12 @@
-use chrono::{Datelike, Duration, Local, NaiveDate, NaiveDateTime, Weekday};
+use chrono::{Datelike, Duration, Local, NaiveDate, Weekday};
 use tui::{
-    backend::Backend,
     buffer::Buffer,
-    layout::{Constraint, Rect},
+    layout::Rect,
     style::{Color, Modifier, Style},
-    widgets::{
-        Block, Borders, Cell as TableCell, Clear, ListState, Row, StatefulWidget, Table,
-        TableState, Widget,
-    },
-    Frame,
+    widgets::{Block, ListState, StatefulWidget, Widget},
 };
 
-use crate::components::{utils, Component};
+use crate::components::utils;
 
 #[derive(Debug, Clone)]
 pub struct Cell {
@@ -40,11 +35,17 @@ impl Cell {
 
 #[derive(Debug, Clone)]
 pub struct Calendar {
-    pub state: ListState,
+    pub empty_days: usize,
     pub cells: Vec<Cell>,
     pub is_visible: bool,
-    block: Option<Block<'static>>,
+    block: Block<'static>,
     style: Style,
+}
+
+impl Calendar {
+    pub fn toggle_visible(&mut self) {
+        self.is_visible = !self.is_visible;
+    }
 }
 
 impl Default for Calendar {
@@ -65,15 +66,7 @@ impl Default for Calendar {
         // the number of days since monday the first day of the month landed on
         let days_since_monday = first_of_the_month
             .signed_duration_since(first_of_the_month.week(Weekday::Mon).first_day())
-            .num_days()
-            + 1; // account for current day as well
-
-        // pad calendar with cells if monday isn't the first day of the month
-        if days_since_monday > 0 {
-            for _ in 0..days_since_monday {
-                cells.push(Cell::empty());
-            }
-        }
+            .num_days();
 
         let mut nth_day_of_the_month = first_of_the_month;
 
@@ -86,14 +79,11 @@ impl Default for Calendar {
             nth_day_of_the_month += one_day;
         }
 
-        let mut state = ListState::default();
-        state.select(Some(d.day0() as usize));
-
         Self {
-            state,
+            empty_days: days_since_monday as usize,
             cells,
             is_visible: false,
-            block: Some(utils::default_block("Calendar")),
+            block: utils::default_block("Calendar"),
             style: Style::default(),
         }
     }
@@ -101,19 +91,12 @@ impl Default for Calendar {
 
 impl StatefulWidget for Calendar {
     type State = ListState;
-    fn render(mut self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         buf.set_style(area, self.style);
-        let calendar_area = match self.block.take() {
-            Some(b) => {
-                // get the inner area
-                let inner_area = b.inner(area);
-                // render the block (borders, title, etc)
-                b.render(area, buf);
-                // return
-                inner_area
-            }
-            None => area,
-        };
+        // get the inner area
+        let calendar_area = self.block.inner(area);
+        // render the block (borders, title, etc)
+        self.block.render(area, buf);
 
         // abort render if size is too small
         if calendar_area.width < 1 || calendar_area.height < 1 {
@@ -124,13 +107,39 @@ impl StatefulWidget for Calendar {
         // of the calendar will be rendered in the area.
         // ...
 
-        let (mut offset_x, mut offset_y) = (calendar_area.x, calendar_area.y);
-
         // divide by eight since we want 7 equally sized cells to render the date inside of
         let cell_width = calendar_area.width / 7;
+        let cell_mid = (cell_width / 2).saturating_sub(1);
+        let cell_height = 2;
+
+        // print header row
+        for (i, day) in ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+            .iter()
+            .enumerate()
+        {
+            buf.set_string(
+                calendar_area.x + i as u16 * cell_width + cell_mid,
+                calendar_area.y,
+                day,
+                Style::default()
+                    .fg(Color::Blue)
+                    .add_modifier(Modifier::BOLD)
+                    .add_modifier(Modifier::UNDERLINED),
+            );
+        }
+
+        //                                                give space for header row ⬇
+        let (mut offset_x, mut offset_y) = (calendar_area.x, calendar_area.y + cell_height);
+
+        // pad for empty day cells
+        for _ in 0..self.empty_days {
+            buf.set_string(offset_x, offset_y, "    ", Style::default());
+            offset_x += 4;
+        }
 
         // render each cell
-        for mut cell in self.cells.into_iter() {
+        for (i, mut cell) in self.cells.into_iter().enumerate() {
+            // println!("rendering cell!!");
             let cell_text = match cell.date.take() {
                 Some(d) => format!("{d:>2}"),
                 None => String::from("  "),
@@ -141,10 +150,21 @@ impl StatefulWidget for Calendar {
                 x: offset_x,
                 y: offset_y,
                 width: cell_width,
-                height: 1,
+                height: cell_height,
             };
 
-            let cell_style = if cell.is_today {
+            let cell_style = if let Some(s) = state.selected() {
+                if s == i {
+                    Style::default()
+                        .bg(Color::Indexed(8))
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default()
+                }
+            } else if cell.is_today {
+                // FIXME: move this to a better place
+                // set the current state
+                state.select(Some(i));
                 Style::default()
                     .bg(Color::Indexed(8))
                     .add_modifier(Modifier::BOLD)
@@ -155,35 +175,19 @@ impl StatefulWidget for Calendar {
             buf.set_style(cell_area, cell_style);
 
             // render the date number in the center of the current cell
-            let center_x = cell_area.x + (cell_area.width / 2) - 1;
-            buf.set_string(center_x, cell_area.y, cell_text, cell_style);
+            buf.set_string(cell_area.x + cell_mid, cell_area.y, cell_text, cell_style);
 
             // check if we are treading boundaries
-            if offset_x + cell_width >= calendar_area.width {
-                offset_y += 2;
+            if offset_x + cell_width >= calendar_area.x + calendar_area.width {
+                offset_y += cell_area.height;
                 offset_x = calendar_area.x;
             } else {
                 offset_x += cell_width;
             }
-        }
-        buf.set_string(
-            calendar_area.x,
-            calendar_area.y,
-            format!(
-                "x: {}, y: {}, width: {}, height: {}, cell_width: {}",
-                calendar_area.x,
-                calendar_area.y,
-                calendar_area.width,
-                calendar_area.height,
-                cell_width
-            ),
-            Style::default(),
-        );
-    }
-}
 
-impl Calendar {
-    pub fn toggle_visible(&mut self) {
-        self.is_visible = !self.is_visible;
+            // if offset_y > calendar_area.height {
+            //     return;
+            // }
+        }
     }
 }

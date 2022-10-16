@@ -57,6 +57,22 @@ pub fn run(mut app: App) -> io::Result<()> {
                         app.toggle_recurring();
                     } else if key_match(&key, &app.keys.open_calendar) {
                         app.todos.new_todo.calendar.toggle_visible();
+                    } else if app.todos.new_todo.calendar.is_visible
+                        && key_match(&key, &app.keys.move_left)
+                    {
+                        app.todos.new_todo.cal_left();
+                    } else if app.todos.new_todo.calendar.is_visible
+                        && key_match(&key, &app.keys.move_right)
+                    {
+                        app.todos.new_todo.cal_right();
+                    } else if app.todos.new_todo.calendar.is_visible
+                        && key_match(&key, &app.keys.move_up)
+                    {
+                        app.todos.new_todo.cal_up();
+                    } else if app.todos.new_todo.calendar.is_visible
+                        && key_match(&key, &app.keys.move_down)
+                    {
+                        app.todos.new_todo.cal_down();
                     } else {
                         app.todos.handle_input(key);
                     }

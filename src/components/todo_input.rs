@@ -17,20 +17,80 @@ pub struct TodoInput {
     pub description: String,
     pub recurring: bool,
     pub is_editing_existing: bool,
+    // FIXME: implement From<NaiveDateTime> for ListState
     pub calendar_state: ListState,
     pub calendar: Calendar,
 }
 
+impl TodoInput {
+    pub fn cal_right(&mut self) {
+        let i = match self.calendar_state.selected() {
+            Some(i) => {
+                if i >= self.calendar.cells.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.calendar_state.select(Some(i));
+    }
+
+    pub fn cal_left(&mut self) {
+        let i = match self.calendar_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.calendar.cells.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.calendar_state.select(Some(i));
+    }
+
+    pub fn cal_down(&mut self) {
+        let i = match self.calendar_state.selected() {
+            Some(i) => {
+                if i + 7 >= self.calendar.cells.len() - 1 {
+                    self.calendar.cells.len() - 1
+                } else {
+                    i + 7
+                }
+            }
+            None => 0,
+        };
+        self.calendar_state.select(Some(i));
+    }
+
+    pub fn cal_up(&mut self) {
+        let i = match self.calendar_state.selected() {
+            Some(i) => {
+                if i < 7 {
+                    0
+                } else {
+                    i - 7
+                }
+            }
+            None => 0,
+        };
+        self.calendar_state.select(Some(i));
+    }
+}
+
 impl Component for TodoInput {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
-        let rect = utils::centered_rect(f.size());
-
         if self.calendar.is_visible {
+            let rect = utils::calendar_rect(f.size());
             f.render_widget(Clear, rect);
             // FIXME: avoid clone
             f.render_stateful_widget(self.calendar.clone(), rect, &mut self.calendar_state);
             return;
         }
+
+        let rect = utils::centered_rect(f.size());
 
         let chunks = Layout::default()
             .direction(tui::layout::Direction::Vertical)

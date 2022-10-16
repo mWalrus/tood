@@ -7,6 +7,8 @@ use super::keymap::{ToodKeyEvent, ToodKeyList};
 pub struct KeyConfig {
     pub move_up: Option<ToodKeyEvent>,
     pub move_down: Option<ToodKeyEvent>,
+    pub move_left: Option<ToodKeyEvent>,
+    pub move_right: Option<ToodKeyEvent>,
     pub alt_move_up: Option<ToodKeyEvent>,
     pub alt_move_down: Option<ToodKeyEvent>,
     pub toggle_completed: Option<ToodKeyEvent>,
@@ -34,6 +36,8 @@ impl KeyConfig {
         ToodKeyList {
             move_up: self.move_up.unwrap_or(dkl.move_up),
             move_down: self.move_down.unwrap_or(dkl.move_down),
+            move_left: self.move_left.unwrap_or(dkl.move_left),
+            move_right: self.move_right.unwrap_or(dkl.move_right),
             alt_move_up: self.alt_move_up.unwrap_or(dkl.alt_move_up),
             alt_move_down: self.alt_move_down.unwrap_or(dkl.alt_move_down),
             toggle_completed: self.toggle_completed.unwrap_or(dkl.toggle_completed),
