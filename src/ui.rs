@@ -55,6 +55,8 @@ pub fn run(mut app: App) -> io::Result<()> {
                         terminal = init_terminal().unwrap();
                     } else if key_match(&key, &app.keys.mark_recurring) {
                         app.toggle_recurring();
+                    } else if key_match(&key, &app.keys.open_calendar) {
+                        app.todos.new_todo.calendar.toggle_visible();
                     } else {
                         app.todos.handle_input(key);
                     }

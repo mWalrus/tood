@@ -4,7 +4,7 @@ pub mod notification;
 pub mod skimmer;
 pub mod todo_input;
 pub mod todo_list;
-mod utils;
+pub mod utils;
 
 use crate::widgets::hint_bar::HintBar;
 use tui::{backend::Backend, Frame};

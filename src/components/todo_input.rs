@@ -2,10 +2,12 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Layout},
     style::{Color, Style},
-    widgets::{Block, Borders, Clear, Paragraph},
+    widgets::{Block, Borders, Clear, ListState, Paragraph},
     Frame,
 };
 use tui_input::Input;
+
+use crate::widgets::calendar::Calendar;
 
 use super::{utils, Component};
 
@@ -15,11 +17,20 @@ pub struct TodoInput {
     pub description: String,
     pub recurring: bool,
     pub is_editing_existing: bool,
+    pub calendar_state: ListState,
+    pub calendar: Calendar,
 }
 
 impl Component for TodoInput {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
         let rect = utils::centered_rect(f.size());
+
+        if self.calendar.is_visible {
+            f.render_widget(Clear, rect);
+            // FIXME: avoid clone
+            f.render_stateful_widget(self.calendar.clone(), rect, &mut self.calendar_state);
+            return;
+        }
 
         let chunks = Layout::default()
             .direction(tui::layout::Direction::Vertical)
