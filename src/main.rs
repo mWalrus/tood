@@ -1,7 +1,6 @@
 mod app;
 mod components;
 mod keys;
-mod message;
 mod ui;
 mod widgets;
 
