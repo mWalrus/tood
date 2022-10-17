@@ -22,7 +22,6 @@ use super::{
     utils, Component,
 };
 
-// FIXME: add all `Todo` fields onto here.
 #[derive(Clone)]
 pub struct TodoInputComponent {
     pub name: Input,
@@ -32,16 +31,22 @@ pub struct TodoInputComponent {
     pub is_editing_existing: bool,
     todo_index: usize,
     keys: SharedKeyList,
-    event_tx: Sender<AppMessage>,
+    message_tx: Sender<AppMessage>,
 }
 
 impl From<TodoInputComponent> for Todo {
     fn from(other: TodoInputComponent) -> Self {
+        let edited_at = if !other.is_editing_existing {
+            None
+        } else {
+            Some(Local::now())
+        };
+
         Self {
             name: other.name.value().to_string(),
             description: other.description,
             metadata: TodoMetadata {
-                edited_at: Some(Local::now()),
+                edited_at,
                 ..other.metadata
             },
         }
@@ -49,7 +54,7 @@ impl From<TodoInputComponent> for Todo {
 }
 
 impl TodoInputComponent {
-    pub fn new(keys: SharedKeyList, event_tx: Sender<AppMessage>) -> Self {
+    pub fn new(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
         Self {
             name: Input::default(),
             description: String::default(),
@@ -58,7 +63,7 @@ impl TodoInputComponent {
             is_editing_existing: false,
             todo_index: 0,
             keys,
-            event_tx,
+            message_tx,
         }
     }
 
@@ -119,23 +124,23 @@ impl Component for TodoInputComponent {
         if key_match(&key, &self.keys.back) {
             // abort current edit
             self.clear();
-            self.event_tx.send(AppMessage::InputState(State::Normal))?;
+            self.message_tx
+                .send(AppMessage::InputState(State::Normal))?;
         } else if key_match(&key, &self.keys.submit) {
-            // TODO: send todo back to list
             if self.is_editing_existing {
-                self.event_tx
+                self.message_tx
                     .send(AppMessage::UpdateList(ListAction::Replace(
                         self.clone().into(),
                         self.todo_index,
                     )))?;
             } else {
-                self.event_tx
+                self.message_tx
                     .send(AppMessage::UpdateList(ListAction::Add(self.clone().into())))?;
             }
         } else if key_match(&key, &self.keys.external_editor) {
             let desc = edit::edit(&self.description)?;
             self.description = desc;
-            self.event_tx.send(AppMessage::RestoreTerminal)?;
+            self.message_tx.send(AppMessage::RestoreTerminal)?;
         } else if key_match(&key, &self.keys.mark_recurring) {
             self.metadata.recurring = !self.metadata.recurring;
         } else {

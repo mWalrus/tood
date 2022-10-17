@@ -37,7 +37,7 @@ pub struct SkimmerComponent {
     pub input: Input,
     pub matches: Vec<SkimMatch>,
     keys: SharedKeyList,
-    event_tx: Sender<AppMessage>,
+    message_tx: Sender<AppMessage>,
 }
 
 impl From<(usize, &Todo)> for SkimMatch {
@@ -52,13 +52,13 @@ impl From<(usize, &Todo)> for SkimMatch {
 }
 
 impl SkimmerComponent {
-    pub fn new(keys: SharedKeyList, event_tx: Sender<AppMessage>) -> Self {
+    pub fn new(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
         Self {
             state: ListState::default(),
             input: Input::default(),
             matches: Vec::new(),
             keys,
-            event_tx,
+            message_tx,
         }
     }
 
@@ -193,14 +193,15 @@ impl Component for SkimmerComponent {
 
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
         if key_match(&key, &self.keys.back) {
-            self.event_tx.send(AppMessage::InputState(State::Normal))?;
+            self.message_tx
+                .send(AppMessage::InputState(State::Normal))?;
         } else if key_match(&key, &self.keys.alt_move_up) {
             self.previous();
         } else if key_match(&key, &self.keys.alt_move_down) {
             self.next();
         } else if key_match(&key, &self.keys.submit) {
             if let Some(s) = self.selected_match() {
-                self.event_tx
+                self.message_tx
                     .send(AppMessage::Skimmer(SkimmerAction::ReportSelection(
                         s.position,
                     )))?;
@@ -208,7 +209,7 @@ impl Component for SkimmerComponent {
             self.clear();
         } else {
             input_backend::to_input_request(Event::Key(key)).and_then(|r| self.input.handle(r));
-            self.event_tx
+            self.message_tx
                 .send(AppMessage::Skimmer(SkimmerAction::Skim))?;
         }
         Ok(())

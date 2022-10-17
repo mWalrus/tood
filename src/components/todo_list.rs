@@ -103,18 +103,18 @@ pub struct TodoListComponent {
     pub todos: Vec<Todo>,
     move_mode: bool,
     keys: SharedKeyList,
-    event_tx: Sender<AppMessage>,
+    message_tx: Sender<AppMessage>,
 }
 
 impl TodoListComponent {
-    pub fn load(keys: SharedKeyList, event_tx: Sender<AppMessage>) -> Self {
+    pub fn load(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
         let todo_data: TodoListSerde = confy::load("tood", Some("todos")).unwrap();
         let mut todo_list = Self {
             state: ListState::default(),
             todos: todo_data.todos,
             move_mode: false,
             keys,
-            event_tx,
+            message_tx,
         };
 
         todo_list.correct_selection();
@@ -329,7 +329,7 @@ impl MainComponent for TodoListComponent {
 
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
         if key_match(&key, &self.keys.quit) {
-            self.event_tx.send(AppMessage::Quit)?;
+            self.message_tx.send(AppMessage::Quit)?;
         } else if key_match(&key, &self.keys.move_up) {
             if self.move_mode {
                 self.move_todo_up();
@@ -345,14 +345,15 @@ impl MainComponent for TodoListComponent {
         } else if key_match(&key, &self.keys.toggle_completed) {
             self.toggle_finished();
         } else if key_match(&key, &self.keys.add_todo) {
-            self.event_tx.send(AppMessage::InputState(State::AddTodo))?;
+            self.message_tx
+                .send(AppMessage::InputState(State::AddTodo))?;
         } else if key_match(&key, &self.keys.edit_todo) {
-            self.event_tx
+            self.message_tx
                 .send(AppMessage::InputState(State::EditTodo))?;
         } else if key_match(&key, &self.keys.move_mode) {
             self.toggle_move_mode();
         } else if key_match(&key, &self.keys.find_mode) {
-            self.event_tx.send(AppMessage::InputState(State::Find))?;
+            self.message_tx.send(AppMessage::InputState(State::Find))?;
         } else if key_match(&key, &self.keys.remove_todo) {
             self.remove_current();
         } else if key_match(&key, &self.keys.submit) && self.move_mode {
