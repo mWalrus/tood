@@ -10,23 +10,13 @@ use crate::components::utils;
 
 #[derive(Debug, Clone)]
 pub struct Cell {
-    date: Option<u32>,
+    date: u32,
     is_today: bool,
 }
 
 impl Cell {
-    fn empty() -> Self {
-        Cell {
-            date: None,
-            is_today: false,
-        }
-    }
-
-    fn with_date(d: u32, is_today: bool) -> Self {
-        Cell {
-            date: Some(d),
-            is_today,
-        }
+    fn with_date(date: u32, is_today: bool) -> Self {
+        Cell { date, is_today }
     }
 }
 
@@ -138,12 +128,8 @@ impl StatefulWidget for Calendar {
         }
 
         // render each cell
-        for (i, mut cell) in self.cells.into_iter().enumerate() {
-            // println!("rendering cell!!");
-            let cell_text = match cell.date.take() {
-                Some(d) => format!("{d:>2}"),
-                None => String::from("  "),
-            };
+        for (i, cell) in self.cells.into_iter().enumerate() {
+            let cell_text = format!("{:>2}", cell.date);
 
             // define a cell area which we can use to render the number
             let cell_area = Rect {
