@@ -7,27 +7,31 @@ use std::{
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     text::Span,
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
-use super::Component;
+use super::StaticComponent;
 
-pub struct Notification {
-    pub rx: Receiver<u8>,
-    tx: Sender<u8>,
-    pub msg: Option<ToodMsg>,
+pub enum NotificationType {
+    Info,
 }
 
-impl Notification {
+pub struct NotificationComponent {
+    pub rx: Receiver<u8>,
+    tx: Sender<u8>,
+    pub msg: Option<NotificationMessage>,
+}
+
+impl NotificationComponent {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
         Self { rx, tx, msg: None }
     }
 
-    pub fn set(&mut self, msg: ToodMsg) {
+    pub fn set(&mut self, msg: NotificationMessage) {
         self.msg = Some(msg);
         let tx = self.tx.clone();
         thread::spawn(move || {
@@ -41,20 +45,29 @@ impl Notification {
     }
 }
 
-impl Component for Notification {
+impl StaticComponent for NotificationComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
         if let Some(msg) = &self.msg {
             let notif_span = match msg.level {
-                ToodMsgType::Error => {
-                    Span::styled(&msg.message, Style::default().bg(Color::LightRed))
-                }
+                ToodMsgType::Error => Span::styled(
+                    &msg.message,
+                    Style::default()
+                        .bg(Color::LightRed)
+                        .add_modifier(Modifier::BOLD),
+                ),
                 ToodMsgType::Warn => Span::styled(
                     &msg.message,
-                    Style::default().bg(Color::Yellow).fg(Color::Black),
+                    Style::default()
+                        .bg(Color::Yellow)
+                        .fg(Color::Black)
+                        .add_modifier(Modifier::BOLD),
                 ),
                 ToodMsgType::Info => Span::styled(
                     &msg.message,
-                    Style::default().bg(Color::Green).fg(Color::Black),
+                    Style::default()
+                        .bg(Color::Green)
+                        .fg(Color::Black)
+                        .add_modifier(Modifier::BOLD),
                 ),
             };
             let notif_paragraph =
@@ -77,7 +90,7 @@ impl Component for Notification {
 }
 
 #[derive(Clone)]
-pub struct ToodMsg {
+pub struct NotificationMessage {
     pub message: String,
     pub level: ToodMsgType,
 }
@@ -89,7 +102,7 @@ pub enum ToodMsgType {
     Info,
 }
 
-impl ToodMsg {
+impl NotificationMessage {
     pub fn warn<T: ToString>(msg: T) -> Self {
         Self {
             message: msg.to_string(),

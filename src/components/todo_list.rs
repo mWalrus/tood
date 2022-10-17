@@ -1,7 +1,9 @@
 use std::io;
 
-use chrono::Local;
-use crossterm::event::{Event, KeyEvent};
+use anyhow::Result;
+use chrono::{DateTime, Local};
+use crossterm::event::KeyEvent;
+use kanal::Sender;
 use serde::{Deserialize, Serialize};
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
@@ -9,46 +11,133 @@ use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{List, ListItem, ListState, Paragraph};
 use tui::Frame;
-use tui_input::backend::crossterm as input_backend;
-use tui_input::Input;
 
-use super::metadata::TodoMetadata;
-use super::todo_input::TodoInput;
 use super::utils::Dim;
 use super::{utils, MainComponent};
-use crate::widgets::calendar::Calendar;
+use crate::app::{AppMessage, State};
+use crate::keys::key_match;
+use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::HintBar;
+
+static TIME_FORMAT: &str = "%D %-I:%M %P";
+
+pub enum ListAction {
+    Replace(Todo, usize),
+    Add(Todo),
+}
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Todo {
     #[serde(default)]
-    pub finished: bool,
     pub name: String,
     pub description: String,
     pub metadata: TodoMetadata,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default)]
-pub struct TodoList {
-    #[serde(skip, default)]
-    pub state: ListState,
-    #[serde(default, rename(serialize = "todos", deserialize = "todos"))]
-    pub todos: Vec<Todo>,
-    #[serde(skip, default)]
-    pub new_todo: TodoInput,
-    #[serde(skip, default)]
-    move_mode: bool,
+impl Todo {
+    pub fn toggle_finished(&mut self) {
+        self.metadata.finished = !self.metadata.finished;
+    }
 }
 
-impl TodoList {
-    pub fn load() -> TodoList {
-        let mut todo_list: TodoList = confy::load("tood", Some("todos")).unwrap();
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TodoMetadata {
+    pub added_at: DateTime<Local>,
+    pub edited_at: Option<DateTime<Local>>,
+    pub recurring: bool,
+    pub finished: bool,
+}
+
+impl TodoMetadata {
+    pub fn to_formatted(&self) -> Vec<(&'static str, String)> {
+        #[inline(always)]
+        fn yes_no(b: bool) -> &'static str {
+            if b {
+                "yes"
+            } else {
+                "no"
+            }
+        }
+
+        let mut c = vec![];
+        c.push(("Added: ", self.added_at.format(TIME_FORMAT).to_string()));
+
+        let edited_at = if let Some(ea) = self.edited_at {
+            ea.format(TIME_FORMAT).to_string()
+        } else {
+            String::new()
+        };
+
+        c.push(("Edited: ", edited_at));
+        c.push(("Recurring: ", yes_no(self.recurring).into()));
+        c
+    }
+}
+
+impl Default for TodoMetadata {
+    fn default() -> Self {
+        Self {
+            added_at: Local::now(),
+            edited_at: None,
+            recurring: false,
+            finished: false,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Default)]
+struct TodoListSerde {
+    todos: Vec<Todo>,
+}
+
+impl From<&TodoListComponent> for TodoListSerde {
+    fn from(other: &TodoListComponent) -> Self {
+        Self {
+            todos: other.todos.clone(),
+        }
+    }
+}
+
+pub struct TodoListComponent {
+    pub state: ListState,
+    pub todos: Vec<Todo>,
+    move_mode: bool,
+    keys: SharedKeyList,
+    event_tx: Sender<AppMessage>,
+}
+
+impl TodoListComponent {
+    pub fn load(keys: SharedKeyList, event_tx: Sender<AppMessage>) -> Self {
+        let todo_data: TodoListSerde = confy::load("tood", Some("todos")).unwrap();
+        let mut todo_list = Self {
+            state: ListState::default(),
+            todos: todo_data.todos,
+            move_mode: false,
+            keys,
+            event_tx,
+        };
+
         todo_list.correct_selection();
         todo_list
     }
 
+    pub fn todos_ref(&self) -> &[Todo] {
+        &self.todos
+    }
+
+    pub fn add_todo(&mut self, t: Todo) {
+        self.todos.push(t);
+        self.state.select(Some(self.todos.len() - 1));
+        self.save_to_disk().unwrap();
+    }
+
+    pub fn replace(&mut self, t: Todo, i: usize) {
+        let _ = std::mem::replace(&mut self.todos[i], t);
+        self.save_to_disk().unwrap();
+    }
+
     pub fn save_to_disk(&self) -> io::Result<()> {
-        confy::store("tood", Some("todos"), &self).unwrap();
+        confy::store("tood", Some("todos"), TodoListSerde::from(self)).unwrap();
         Ok(())
     }
 
@@ -99,89 +188,26 @@ impl TodoList {
         }
     }
 
-    pub fn add_todo(&mut self) {
-        let mut new_todo = Todo {
-            finished: false,
-            name: self.new_todo.name.value().into(),
-            description: self.new_todo.description.clone(),
-            metadata: TodoMetadata {
-                recurring: self.new_todo.recurring,
-                ..Default::default()
-            },
-        };
-        if self.new_todo.is_editing_existing {
-            if let Some(s) = self.state.selected() {
-                let original_metadata = self.todos[s].metadata.clone();
-                new_todo.metadata = TodoMetadata {
-                    edited_at: Some(Local::now()),
-                    recurring: self.new_todo.recurring,
-                    ..original_metadata
-                };
-                let _ = std::mem::replace(&mut self.todos[s], new_todo);
-                self.save_to_disk().unwrap();
-                return;
-            } else {
-                // NOTE: should be impossible to get here
-                unreachable!()
-            }
-        } else {
-            // move selected to newly added todo
-            self.state.select(Some(self.todos.len()));
-        }
-        self.todos.push(new_todo);
-        if self.state.selected().is_none() {
-            self.state.select(Some(0))
-        }
-        self.save_to_disk().unwrap();
-    }
-
-    pub fn selected(&self) -> Option<&Todo> {
+    pub fn selected(&self) -> Option<(&Todo, usize)> {
         if let Some(s) = self.state.selected() {
-            return Some(&self.todos[s]);
+            return Some((&self.todos[s], s));
         }
         None
     }
 
-    pub fn toggle_completed(&mut self) -> Result<(), ()> {
+    pub fn toggle_finished(&mut self) {
         if let Some(s) = self.state.selected() {
-            let selected_todo = &self.todos[s];
             // dont toggle if the todo is recurring
-            if selected_todo.metadata.recurring {
-                return Err(());
+            if self.todos[s].metadata.recurring {
+                return;
             }
-            let finished = selected_todo.finished;
-            self.todos[s].finished = !finished;
+            self.todos[s].toggle_finished();
             self.save_to_disk().unwrap();
         }
-        Ok(())
     }
 
-    pub fn handle_input(&mut self, ev: KeyEvent) {
-        input_backend::to_input_request(Event::Key(ev)).and_then(|r| self.new_todo.name.handle(r));
-    }
-
-    pub fn reset_input(&mut self) {
-        self.new_todo = TodoInput::default();
-    }
-
-    pub fn transfer_selected_to_input(&mut self) {
-        if let Some(s) = self.state.selected() {
-            let current_todo = &self.todos[s];
-            let new_todo = TodoInput {
-                name: Input::new(current_todo.name.to_string()),
-                description: current_todo.description.to_string(),
-                is_editing_existing: true,
-                recurring: current_todo.metadata.recurring,
-                calendar_state: ListState::default(),
-                calendar: Calendar::default(),
-            };
-            self.new_todo = new_todo;
-        }
-    }
-
-    pub fn toggle_recurring(&mut self) -> bool {
-        self.new_todo.recurring = !self.new_todo.recurring;
-        self.new_todo.recurring
+    pub fn select(&mut self, selection: usize) {
+        self.state.select(Some(selection));
     }
 
     pub fn move_todo_up(&mut self) {
@@ -206,7 +232,7 @@ impl TodoList {
     }
 }
 
-impl MainComponent for TodoList {
+impl MainComponent for TodoListComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool, hb: HintBar) {
         let size = f.size();
         let chunks = Layout::default()
@@ -227,7 +253,7 @@ impl MainComponent for TodoList {
             .map(|t| {
                 let (finished, mut fg_style) = if t.metadata.recurring {
                     ("[∞] ", Style::default().fg(Color::Blue))
-                } else if t.finished {
+                } else if t.metadata.finished {
                     ("[x] ", Style::default().fg(Color::Green))
                 } else {
                     ("[ ] ", Style::default())
@@ -274,7 +300,7 @@ impl MainComponent for TodoList {
             .constraints([Constraint::Percentage(70), Constraint::Min(30)].as_ref())
             .split(chunks[1]);
 
-        if let Some(t) = self.selected() {
+        if let Some((t, _)) = self.selected() {
             let description = Paragraph::new(&*t.description)
                 .wrap(tui::widgets::Wrap { trim: true })
                 .block(utils::default_block("Description").dim(dim));
@@ -299,5 +325,39 @@ impl MainComponent for TodoList {
             f.render_widget(placeholder2, data_chunks[1]);
         }
         f.render_widget(hb, chunks[2]);
+    }
+
+    fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
+        if key_match(&key, &self.keys.quit) {
+            self.event_tx.send(AppMessage::Quit)?;
+        } else if key_match(&key, &self.keys.move_up) {
+            if self.move_mode {
+                self.move_todo_up();
+            } else {
+                self.previous();
+            }
+        } else if key_match(&key, &self.keys.move_down) {
+            if self.move_mode {
+                self.move_todo_down();
+            } else {
+                self.next();
+            }
+        } else if key_match(&key, &self.keys.toggle_completed) {
+            self.toggle_finished();
+        } else if key_match(&key, &self.keys.add_todo) {
+            self.event_tx.send(AppMessage::InputState(State::AddTodo))?;
+        } else if key_match(&key, &self.keys.edit_todo) {
+            self.event_tx
+                .send(AppMessage::InputState(State::EditTodo))?;
+        } else if key_match(&key, &self.keys.move_mode) {
+            self.toggle_move_mode();
+        } else if key_match(&key, &self.keys.find_mode) {
+            self.event_tx.send(AppMessage::InputState(State::Find))?;
+        } else if key_match(&key, &self.keys.remove_todo) {
+            self.remove_current();
+        } else if key_match(&key, &self.keys.submit) && self.move_mode {
+            self.move_mode = false;
+        }
+        Ok(())
     }
 }

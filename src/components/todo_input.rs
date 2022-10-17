@@ -1,95 +1,85 @@
+use anyhow::Result;
+use chrono::Local;
+use crossterm::event::{Event, KeyEvent};
+use kanal::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Layout},
     style::{Color, Style},
-    widgets::{Block, Borders, Clear, ListState, Paragraph},
+    widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
+use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 
-use crate::widgets::calendar::Calendar;
+use crate::{
+    app::{AppMessage, State},
+    keys::{key_match, keymap::SharedKeyList},
+};
 
-use super::{utils, Component};
+use super::{
+    todo_list::{ListAction, Todo, TodoMetadata},
+    utils, Component,
+};
 
-#[derive(Default, Debug, Clone)]
-pub struct TodoInput {
+// FIXME: add all `Todo` fields onto here.
+#[derive(Clone)]
+pub struct TodoInputComponent {
     pub name: Input,
     pub description: String,
-    pub recurring: bool,
+    pub finished: bool,
+    pub metadata: TodoMetadata,
     pub is_editing_existing: bool,
-    // FIXME: implement From<NaiveDateTime> for ListState
-    pub calendar_state: ListState,
-    pub calendar: Calendar,
+    todo_index: usize,
+    keys: SharedKeyList,
+    event_tx: Sender<AppMessage>,
 }
 
-impl TodoInput {
-    pub fn cal_right(&mut self) {
-        let i = match self.calendar_state.selected() {
-            Some(i) => {
-                if i >= self.calendar.cells.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.calendar_state.select(Some(i));
-    }
-
-    pub fn cal_left(&mut self) {
-        let i = match self.calendar_state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.calendar.cells.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.calendar_state.select(Some(i));
-    }
-
-    pub fn cal_down(&mut self) {
-        let i = match self.calendar_state.selected() {
-            Some(i) => {
-                if i + 7 >= self.calendar.cells.len() - 1 {
-                    self.calendar.cells.len() - 1
-                } else {
-                    i + 7
-                }
-            }
-            None => 0,
-        };
-        self.calendar_state.select(Some(i));
-    }
-
-    pub fn cal_up(&mut self) {
-        let i = match self.calendar_state.selected() {
-            Some(i) => {
-                if i < 7 {
-                    0
-                } else {
-                    i - 7
-                }
-            }
-            None => 0,
-        };
-        self.calendar_state.select(Some(i));
-    }
-}
-
-impl Component for TodoInput {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
-        if self.calendar.is_visible {
-            let rect = utils::calendar_rect(f.size());
-            f.render_widget(Clear, rect);
-            // FIXME: avoid clone
-            f.render_stateful_widget(self.calendar.clone(), rect, &mut self.calendar_state);
-            return;
+impl From<TodoInputComponent> for Todo {
+    fn from(other: TodoInputComponent) -> Self {
+        Self {
+            name: other.name.value().to_string(),
+            description: other.description,
+            metadata: TodoMetadata {
+                edited_at: Some(Local::now()),
+                ..other.metadata
+            },
         }
+    }
+}
 
+impl TodoInputComponent {
+    pub fn new(keys: SharedKeyList, event_tx: Sender<AppMessage>) -> Self {
+        Self {
+            name: Input::default(),
+            description: String::default(),
+            finished: false,
+            metadata: TodoMetadata::default(),
+            is_editing_existing: false,
+            todo_index: 0,
+            keys,
+            event_tx,
+        }
+    }
+
+    pub fn populate_with(&mut self, todo: &Todo, i: usize) {
+        self.name = Input::from(todo.name.clone());
+        self.description = todo.description.to_string();
+        self.metadata = todo.metadata.clone();
+        self.is_editing_existing = true;
+        self.todo_index = i;
+    }
+
+    pub fn clear(&mut self) {
+        self.name = Input::default();
+        self.description = String::default();
+        self.metadata = TodoMetadata::default();
+        self.is_editing_existing = false;
+    }
+}
+
+impl Component for TodoInputComponent {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
         let rect = utils::centered_rect(f.size());
 
         let chunks = Layout::default()
@@ -123,5 +113,34 @@ impl Component for TodoInput {
             chunks[0].x + (self.name.cursor() as u16).min(width) + 1,
             chunks[0].y + 1,
         );
+    }
+
+    fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
+        if key_match(&key, &self.keys.back) {
+            // abort current edit
+            self.clear();
+            self.event_tx.send(AppMessage::InputState(State::Normal))?;
+        } else if key_match(&key, &self.keys.submit) {
+            // TODO: send todo back to list
+            if self.is_editing_existing {
+                self.event_tx
+                    .send(AppMessage::UpdateList(ListAction::Replace(
+                        self.clone().into(),
+                        self.todo_index,
+                    )))?;
+            } else {
+                self.event_tx
+                    .send(AppMessage::UpdateList(ListAction::Add(self.clone().into())))?;
+            }
+        } else if key_match(&key, &self.keys.external_editor) {
+            let desc = edit::edit(&self.description)?;
+            self.description = desc;
+            self.event_tx.send(AppMessage::RestoreTerminal)?;
+        } else if key_match(&key, &self.keys.mark_recurring) {
+            self.metadata.recurring = !self.metadata.recurring;
+        } else {
+            input_backend::to_input_request(Event::Key(key)).and_then(|r| self.name.handle(r));
+        }
+        Ok(())
     }
 }

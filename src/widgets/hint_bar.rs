@@ -5,7 +5,7 @@ use tui::{
     widgets::Widget,
 };
 
-use crate::components::app::App;
+use crate::app::App;
 
 pub struct HintBar {
     hints: Vec<Hint>,
@@ -78,7 +78,7 @@ impl HintBar {
             },
             Hint {
                 name: "Edit desc",
-                bind: app.keys.add_description.to_string(),
+                bind: app.keys.external_editor.to_string(),
             },
             Hint {
                 name: "Mark recurring",
@@ -126,6 +126,32 @@ impl HintBar {
             Hint {
                 name: "Down",
                 bind: app.keys.move_down.to_string(),
+            },
+        ];
+        Self { hints }
+    }
+
+    pub fn due_date_mode(app: &App) -> Self {
+        let hints = vec![
+            Hint {
+                name: "Select",
+                bind: app.keys.submit.to_string(),
+            },
+            Hint {
+                name: "Up",
+                bind: app.keys.move_up.to_string(),
+            },
+            Hint {
+                name: "Down",
+                bind: app.keys.move_down.to_string(),
+            },
+            Hint {
+                name: "Left",
+                bind: app.keys.move_left.to_string(),
+            },
+            Hint {
+                name: "Right",
+                bind: app.keys.move_right.to_string(),
             },
         ];
         Self { hints }

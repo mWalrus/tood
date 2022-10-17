@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::{Deserialize, Serialize};
 
@@ -55,6 +57,8 @@ impl From<&ToodKeyEvent> for KeyEvent {
     }
 }
 
+pub type SharedKeyList = Rc<ToodKeyList>;
+
 #[derive(Debug)]
 pub struct ToodKeyList {
     pub move_up: ToodKeyEvent,
@@ -65,7 +69,7 @@ pub struct ToodKeyList {
     pub alt_move_down: ToodKeyEvent,
     pub toggle_completed: ToodKeyEvent,
     pub add_todo: ToodKeyEvent,
-    pub add_description: ToodKeyEvent,
+    pub external_editor: ToodKeyEvent,
     pub edit_todo: ToodKeyEvent,
     pub open_calendar: ToodKeyEvent,
     pub remove_todo: ToodKeyEvent,
@@ -89,7 +93,7 @@ impl Default for ToodKeyList {
             alt_move_down:       ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
             toggle_completed:    ToodKeyEvent::new(KeyCode::Char(' '), KeyModifiers::empty()),
             add_todo:            ToodKeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()),
-            add_description:     ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
+            external_editor:     ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
             edit_todo:           ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()),
             open_calendar:       ToodKeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
             remove_todo:         ToodKeyEvent::new(KeyCode::Char('d'), KeyModifiers::empty()),

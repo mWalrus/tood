@@ -1,6 +1,8 @@
+use anyhow::Result;
 use crossterm::event::{Event, KeyEvent};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
+use kanal::Sender;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
@@ -10,9 +12,18 @@ use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 
+use crate::app::{AppMessage, State};
+use crate::keys::key_match;
+use crate::keys::keymap::SharedKeyList;
+
 use super::todo_list::Todo;
 use super::utils;
 use super::Component;
+
+pub enum SkimmerAction {
+    Skim,
+    ReportSelection(usize),
+}
 
 pub struct SkimMatch {
     pub text: String,
@@ -21,11 +32,12 @@ pub struct SkimMatch {
     score: i64,
 }
 
-#[derive(Default)]
-pub struct Skimmer {
+pub struct SkimmerComponent {
     pub state: ListState,
     pub input: Input,
     pub matches: Vec<SkimMatch>,
+    keys: SharedKeyList,
+    event_tx: Sender<AppMessage>,
 }
 
 impl From<(usize, &Todo)> for SkimMatch {
@@ -39,30 +51,39 @@ impl From<(usize, &Todo)> for SkimMatch {
     }
 }
 
-impl Skimmer {
-    pub fn skim(&mut self, ev: Option<KeyEvent>, todos: &[Todo]) {
-        if let Some(e) = ev {
-            input_backend::to_input_request(Event::Key(e)).and_then(|r| self.input.handle(r));
-            let mut matches: Vec<SkimMatch> = Vec::new();
-            let matcher = Box::new(SkimMatcherV2::default());
-            for (i, todo) in todos.iter().enumerate() {
-                if let Some((score, indices)) =
-                    matcher.fuzzy_indices(&todo.name, self.input.value())
-                {
-                    let m = SkimMatch {
-                        text: todo.name.clone(),
-                        position: i,
-                        indices,
-                        score,
-                    };
-                    matches.push(m);
-                }
-            }
-            matches.sort_by(|a, b| a.score.cmp(&b.score));
-            self.matches = matches;
-        } else {
-            self.matches = todos.iter().enumerate().map(SkimMatch::from).collect();
+impl SkimmerComponent {
+    pub fn new(keys: SharedKeyList, event_tx: Sender<AppMessage>) -> Self {
+        Self {
+            state: ListState::default(),
+            input: Input::default(),
+            matches: Vec::new(),
+            keys,
+            event_tx,
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.state = ListState::default();
+        self.matches = Vec::new();
+        self.input.reset();
+    }
+
+    pub fn skim(&mut self, todos: &[Todo]) {
+        let mut matches: Vec<SkimMatch> = Vec::new();
+        let matcher = Box::new(SkimMatcherV2::default());
+        for (i, todo) in todos.iter().enumerate() {
+            if let Some((score, indices)) = matcher.fuzzy_indices(&todo.name, self.input.value()) {
+                let m = SkimMatch {
+                    text: todo.name.clone(),
+                    position: i,
+                    indices,
+                    score,
+                };
+                matches.push(m);
+            }
+        }
+        matches.sort_by(|a, b| a.score.cmp(&b.score));
+        self.matches = matches;
 
         if !self.matches.is_empty() {
             self.state.select(Some(0));
@@ -106,7 +127,7 @@ impl Skimmer {
     }
 }
 
-impl Component for Skimmer {
+impl Component for SkimmerComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
         let rect = utils::centered_rect(f.size());
 
@@ -168,5 +189,28 @@ impl Component for Skimmer {
             chunks[0].x + (self.input.cursor() as u16).min(width) + 1,
             chunks[0].y + 1,
         );
+    }
+
+    fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
+        if key_match(&key, &self.keys.back) {
+            self.event_tx.send(AppMessage::InputState(State::Normal))?;
+        } else if key_match(&key, &self.keys.alt_move_up) {
+            self.previous();
+        } else if key_match(&key, &self.keys.alt_move_down) {
+            self.next();
+        } else if key_match(&key, &self.keys.submit) {
+            if let Some(s) = self.selected_match() {
+                self.event_tx
+                    .send(AppMessage::Skimmer(SkimmerAction::ReportSelection(
+                        s.position,
+                    )))?;
+            }
+            self.clear();
+        } else {
+            input_backend::to_input_request(Event::Key(key)).and_then(|r| self.input.handle(r));
+            self.event_tx
+                .send(AppMessage::Skimmer(SkimmerAction::Skim))?;
+        }
+        Ok(())
     }
 }

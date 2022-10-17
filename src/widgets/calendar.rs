@@ -20,6 +20,8 @@ impl Cell {
     }
 }
 
+pub type CalendarState = ListState;
+
 // FIXME: add method `with_selected_date` which can be used when editing
 //        an existing todo
 
