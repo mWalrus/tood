@@ -65,11 +65,12 @@ impl TodoMetadata {
         let edited_at = if let Some(ea) = self.edited_at {
             ea.format(TIME_FORMAT).to_string()
         } else {
-            String::new()
+            "never".into()
         };
 
         c.push(("Edited: ", edited_at));
         c.push(("Recurring: ", yes_no(self.recurring).into()));
+        c.push(("Finished: ", yes_no(self.finished).into()));
         c
     }
 }
