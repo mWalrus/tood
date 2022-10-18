@@ -5,7 +5,15 @@ use tui::{
     widgets::Widget,
 };
 
-use crate::app::App;
+use crate::keys::keymap::SharedKeyList;
+
+pub enum BarType {
+    NormalMode,
+    MoveMode,
+    EditMode,
+    FindMode,
+    DueDateMode,
+}
 
 pub struct HintBar {
     hints: Vec<Hint>,
@@ -29,129 +37,129 @@ impl Hint {
 }
 
 impl HintBar {
-    pub fn normal_mode(app: &App) -> Self {
+    pub fn normal_mode(keys: SharedKeyList) -> Self {
         let hints = vec![
             Hint {
                 name: "Up",
-                bind: app.keys.move_up.to_string(),
+                bind: keys.move_up.to_string(),
             },
             Hint {
                 name: "Down",
-                bind: app.keys.move_down.to_string(),
+                bind: keys.move_down.to_string(),
             },
             Hint {
                 name: "Add",
-                bind: app.keys.add_todo.to_string(),
+                bind: keys.add_todo.to_string(),
             },
             Hint {
                 name: "Find",
-                bind: app.keys.find_mode.to_string(),
+                bind: keys.find_mode.to_string(),
             },
             Hint {
                 name: "Move",
-                bind: app.keys.move_mode.to_string(),
+                bind: keys.move_mode.to_string(),
             },
             Hint {
                 name: "Toggle",
-                bind: app.keys.toggle_completed.to_string(),
+                bind: keys.toggle_completed.to_string(),
             },
             Hint {
                 name: "Edit",
-                bind: app.keys.edit_todo.to_string(),
+                bind: keys.edit_todo.to_string(),
             },
             Hint {
                 name: "Delete",
-                bind: app.keys.remove_todo.to_string(),
+                bind: keys.remove_todo.to_string(),
             },
             Hint {
                 name: "Quit",
-                bind: app.keys.quit.to_string(),
+                bind: keys.quit.to_string(),
             },
         ];
         Self { hints }
     }
-    pub fn edit_mode(app: &App) -> Self {
+    pub fn edit_mode(keys: SharedKeyList) -> Self {
         let hints = vec![
             Hint {
                 name: "Back",
-                bind: app.keys.back.to_string(),
+                bind: keys.back.to_string(),
             },
             Hint {
                 name: "Edit desc",
-                bind: app.keys.external_editor.to_string(),
+                bind: keys.external_editor.to_string(),
             },
             Hint {
                 name: "Mark recurring",
-                bind: app.keys.mark_recurring.to_string(),
+                bind: keys.mark_recurring.to_string(),
             },
             Hint {
                 name: "Save",
-                bind: app.keys.submit.to_string(),
+                bind: keys.submit.to_string(),
             },
         ];
         Self { hints }
     }
-    pub fn find_mode(app: &App) -> Self {
+    pub fn find_mode(keys: SharedKeyList) -> Self {
         let hints = vec![
             Hint {
                 name: "Back",
-                bind: app.keys.back.to_string(),
+                bind: keys.back.to_string(),
             },
             Hint {
                 name: "Up",
-                bind: app.keys.alt_move_up.to_string(),
+                bind: keys.alt_move_up.to_string(),
             },
             Hint {
                 name: "Down",
-                bind: app.keys.alt_move_down.to_string(),
+                bind: keys.alt_move_down.to_string(),
             },
             Hint {
                 name: "Select",
-                bind: app.keys.submit.to_string(),
+                bind: keys.submit.to_string(),
             },
         ];
         Self { hints }
     }
 
-    pub fn move_mode(app: &App) -> Self {
+    pub fn move_mode(keys: SharedKeyList) -> Self {
         let hints = vec![
             Hint {
                 name: "Save",
-                bind: app.keys.submit.to_string(),
+                bind: keys.submit.to_string(),
             },
             Hint {
                 name: "Up",
-                bind: app.keys.move_up.to_string(),
+                bind: keys.move_up.to_string(),
             },
             Hint {
                 name: "Down",
-                bind: app.keys.move_down.to_string(),
+                bind: keys.move_down.to_string(),
             },
         ];
         Self { hints }
     }
 
-    pub fn due_date_mode(app: &App) -> Self {
+    pub fn due_date_mode(keys: SharedKeyList) -> Self {
         let hints = vec![
             Hint {
                 name: "Select",
-                bind: app.keys.submit.to_string(),
+                bind: keys.submit.to_string(),
             },
             Hint {
                 name: "Up",
-                bind: app.keys.move_up.to_string(),
+                bind: keys.move_up.to_string(),
             },
             Hint {
                 name: "Down",
-                bind: app.keys.move_down.to_string(),
+                bind: keys.move_down.to_string(),
             },
             Hint {
                 name: "Left",
-                bind: app.keys.move_left.to_string(),
+                bind: keys.move_left.to_string(),
             },
             Hint {
                 name: "Right",
-                bind: app.keys.move_right.to_string(),
+                bind: keys.move_right.to_string(),
             },
         ];
         Self { hints }
@@ -176,7 +184,7 @@ impl HintBar {
     }
 }
 
-impl Widget for HintBar {
+impl Widget for &HintBar {
     fn render(self, rect: Rect, buf: &mut Buffer) {
         let (mut offset_x, mut offset_y) = (rect.x, rect.y);
         for hint in self.hints.iter() {

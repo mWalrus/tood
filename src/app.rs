@@ -7,6 +7,7 @@ use crate::components::todo_list::ListAction;
 use crate::components::TodoInputComponent;
 use crate::components::{Component, MainComponent};
 use crate::keys::keymap::SharedKeyList;
+use crate::widgets::hint_bar::BarType;
 use anyhow::Result;
 use crossterm::event;
 use crossterm::event::Event;
@@ -48,6 +49,7 @@ pub enum State {
     EditTodo,
     DueDate,
     Find,
+    Move,
 }
 
 impl App {
@@ -76,7 +78,7 @@ impl App {
     pub fn poll_event(&mut self) -> Result<()> {
         if let Some(Event::Key(ev)) = Self::poll(POLL_DURATION)? {
             match self.state {
-                State::Normal => {
+                State::Normal | State::Move => {
                     self.todo_list.handle_input(ev)?;
                 }
                 State::AddTodo => {
@@ -102,12 +104,14 @@ impl App {
                 AppMessage::InputState(state) => {
                     match state {
                         State::Find => {
+                            self.todo_list.load_hintbar(BarType::FindMode);
                             self.notification
                                 .set(NotificationMessage::info("Entered find mode"));
                             let todos = self.todo_list.todos_ref();
                             self.skimmer.skim(&todos);
                         }
                         State::EditTodo => {
+                            self.todo_list.load_hintbar(BarType::EditMode);
                             self.notification
                                 .set(NotificationMessage::info("Entered edit mode"));
                             if let Some((t, i)) = self.todo_list.selected() {
@@ -115,12 +119,19 @@ impl App {
                             }
                         }
                         State::AddTodo => {
+                            self.todo_list.load_hintbar(BarType::EditMode);
                             self.notification
                                 .set(NotificationMessage::info("Entered edit mode"));
                         }
                         State::Normal => {
+                            self.todo_list.load_hintbar(BarType::NormalMode);
                             self.notification
                                 .set(NotificationMessage::info("Entered normal mode"));
+                        }
+                        State::Move => {
+                            self.todo_list.load_hintbar(BarType::MoveMode);
+                            self.notification
+                                .set(NotificationMessage::info("Entered move mode"));
                         }
                         _ => {}
                     }
@@ -129,6 +140,7 @@ impl App {
                 AppMessage::Skimmer(skim_action) => match skim_action {
                     SkimmerAction::ReportSelection(s) => {
                         self.todo_list.select(s);
+                        self.todo_list.load_hintbar(BarType::NormalMode);
                         // NOTE: I'm not sure if I like how we set the state without the sender.
                         //       It's not wrong but it's not really elegant imo.
                         self.state = State::Normal;

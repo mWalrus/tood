@@ -41,19 +41,19 @@ pub fn run(mut app: App) -> TerminalResult<()> {
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     match app.state {
-        State::Normal => {
-            app.todo_list.draw(f, false, HintBar::normal_mode(app));
+        State::Normal | State::Move => {
+            app.todo_list.draw(f, false);
         }
         State::AddTodo | State::EditTodo => {
-            app.todo_list.draw(f, true, HintBar::edit_mode(app));
+            app.todo_list.draw(f, true);
             app.todo_input.draw(f);
         }
         State::Find => {
-            app.todo_list.draw(f, true, HintBar::find_mode(app));
+            app.todo_list.draw(f, true);
             app.skimmer.draw(f);
         }
         State::DueDate => {
-            app.todo_list.draw(f, true, HintBar::due_date_mode(app));
+            app.todo_list.draw(f, true);
             app.due_date.draw(f);
         }
     }

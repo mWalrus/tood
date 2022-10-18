@@ -14,7 +14,6 @@ pub use todo_list::TodoListComponent;
 
 use anyhow::Result;
 
-use crate::widgets::hint_bar::HintBar;
 use tui::{backend::Backend, Frame};
 
 pub trait Component {
@@ -27,6 +26,6 @@ pub trait StaticComponent {
 }
 
 pub trait MainComponent {
-    fn draw<B: Backend>(&mut self, _f: &mut Frame<B>, _dim: bool, _hb: HintBar) {}
+    fn draw<B: Backend>(&mut self, _f: &mut Frame<B>, _dim: bool) {}
     fn handle_input(&mut self, key: KeyEvent) -> Result<()>;
 }

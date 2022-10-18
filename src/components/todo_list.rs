@@ -17,7 +17,7 @@ use super::{utils, MainComponent};
 use crate::app::{AppMessage, State};
 use crate::keys::key_match;
 use crate::keys::keymap::SharedKeyList;
-use crate::widgets::hint_bar::HintBar;
+use crate::widgets::hint_bar::{BarType, HintBar};
 
 static TIME_FORMAT: &str = "%D %-I:%M %P";
 
@@ -102,9 +102,30 @@ impl From<&TodoListComponent> for TodoListSerde {
 pub struct TodoListComponent {
     pub state: ListState,
     pub todos: Vec<Todo>,
-    move_mode: bool,
     keys: SharedKeyList,
+    hintbars: HintBars,
+    move_mode: bool,
     message_tx: Sender<AppMessage>,
+}
+
+pub struct HintBars {
+    selected: usize,
+    items: [HintBar; 5],
+}
+
+impl HintBars {
+    fn new(keys: SharedKeyList) -> Self {
+        Self {
+            selected: 0,
+            items: [
+                HintBar::normal_mode(keys.clone()),
+                HintBar::edit_mode(keys.clone()),
+                HintBar::find_mode(keys.clone()),
+                HintBar::move_mode(keys.clone()),
+                HintBar::due_date_mode(keys.clone()),
+            ],
+        }
+    }
 }
 
 impl TodoListComponent {
@@ -113,8 +134,9 @@ impl TodoListComponent {
         let mut todo_list = Self {
             state: ListState::default(),
             todos: todo_data.todos,
+            keys: keys.clone(),
+            hintbars: HintBars::new(keys.clone()),
             move_mode: false,
-            keys,
             message_tx,
         };
 
@@ -207,10 +229,6 @@ impl TodoListComponent {
         }
     }
 
-    pub fn select(&mut self, selection: usize) {
-        self.state.select(Some(selection));
-    }
-
     pub fn move_todo_up(&mut self) {
         if let Some(s) = self.state.selected() {
             let new_index = if s == 0 { self.todos.len() - 1 } else { s - 1 };
@@ -228,21 +246,34 @@ impl TodoListComponent {
         }
     }
 
-    pub fn toggle_move_mode(&mut self) {
-        self.move_mode = !self.move_mode;
+    #[inline(always)]
+    pub fn select(&mut self, selection: usize) {
+        self.state.select(Some(selection));
+    }
+
+    pub fn load_hintbar(&mut self, bt: BarType) {
+        let i = match bt {
+            BarType::NormalMode => 0,
+            BarType::EditMode => 1,
+            BarType::FindMode => 2,
+            BarType::MoveMode => 3,
+            BarType::DueDateMode => 4,
+        };
+        self.hintbars.selected = i;
     }
 }
 
 impl MainComponent for TodoListComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool, hb: HintBar) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool) {
         let size = f.size();
+        let hintbar = &self.hintbars.items[self.hintbars.selected];
         let chunks = Layout::default()
             .direction(tui::layout::Direction::Vertical)
             .constraints(
                 [
                     Constraint::Percentage(60),
                     Constraint::Min(3),
-                    Constraint::Length(hb.height_required(size.width - 2, size.height)),
+                    Constraint::Length(hintbar.height_required(size.width - 2, size.height)),
                 ]
                 .as_ref(),
             )
@@ -325,7 +356,7 @@ impl MainComponent for TodoListComponent {
             f.render_widget(placeholder1, data_chunks[0]);
             f.render_widget(placeholder2, data_chunks[1]);
         }
-        f.render_widget(hb, chunks[2]);
+        f.render_widget(hintbar, chunks[2]);
     }
 
     fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
@@ -352,7 +383,8 @@ impl MainComponent for TodoListComponent {
             self.message_tx
                 .send(AppMessage::InputState(State::EditTodo))?;
         } else if key_match(&key, &self.keys.move_mode) {
-            self.toggle_move_mode();
+            self.move_mode = true;
+            self.message_tx.send(AppMessage::InputState(State::Move))?;
         } else if key_match(&key, &self.keys.find_mode) {
             self.message_tx.send(AppMessage::InputState(State::Find))?;
         } else if key_match(&key, &self.keys.remove_todo) {
