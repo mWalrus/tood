@@ -1,4 +1,4 @@
-use crate::app::{App, PollResponse, State};
+use crate::app::{App, PollOutcome, State};
 use crate::components::{Component, MainComponent, StaticComponent};
 use crate::widgets::hint_bar::HintBar;
 use crossterm::terminal::{
@@ -14,17 +14,23 @@ pub fn run(mut app: App) -> TerminalResult<()> {
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
-        match app.poll_event() {
-            Ok(response) => match response {
-                PollResponse::NoAction => {}
-                PollResponse::ReInitTerminal => {
+        if let Err(e) = app.poll_event() {
+            eprintln!("Failed to poll for key events: {e}");
+            // idk if we want to break here or if we can recover.
+            break;
+        }
+
+        match app.poll_message() {
+            Ok(outcome) => match outcome {
+                PollOutcome::NoAction => {}
+                PollOutcome::ReInitTerminal => {
                     terminal = init_terminal()?;
                 }
-                PollResponse::Break => break,
+                PollOutcome::Break => break,
             },
             Err(e) => {
                 restore_terminal()?;
-                eprintln!("Event polling failed: {e}");
+                eprintln!("Failed to poll for app messages: {e}");
                 break;
             }
         }

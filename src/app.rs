@@ -35,7 +35,7 @@ pub enum AppMessage {
     Quit,
 }
 
-pub enum PollResponse {
+pub enum PollOutcome {
     NoAction,
     ReInitTerminal,
     Break,
@@ -73,7 +73,7 @@ impl App {
         }
     }
 
-    pub fn poll_event(&mut self) -> Result<PollResponse> {
+    pub fn poll_event(&mut self) -> Result<()> {
         if let Some(Event::Key(ev)) = Self::poll(POLL_DURATION)? {
             match self.state {
                 State::Normal => {
@@ -93,7 +93,10 @@ impl App {
                 }
             }
         }
+        Ok(())
+    }
 
+    pub fn poll_message(&mut self) -> Result<PollOutcome> {
         if let Ok(Some(message)) = self.receiver.try_recv() {
             match message {
                 AppMessage::InputState(state) => {
@@ -148,8 +151,8 @@ impl App {
                     self.notification
                         .set(NotificationMessage::info("Entered normal mode"));
                 }
-                AppMessage::RestoreTerminal => return Ok(PollResponse::ReInitTerminal),
-                AppMessage::Quit => return Ok(PollResponse::Break),
+                AppMessage::RestoreTerminal => return Ok(PollOutcome::ReInitTerminal),
+                AppMessage::Quit => return Ok(PollOutcome::Break),
             }
         }
 
@@ -158,6 +161,6 @@ impl App {
             self.notification.clear();
         }
 
-        Ok(PollResponse::NoAction)
+        Ok(PollOutcome::NoAction)
     }
 }
