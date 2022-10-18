@@ -12,6 +12,7 @@ use tui::text::{Span, Spans};
 use tui::widgets::{List, ListItem, ListState, Paragraph};
 use tui::Frame;
 
+use super::notification::FlashMsg;
 use super::utils::Dim;
 use super::{utils, MainComponent};
 use crate::app::{AppMessage, State};
@@ -148,10 +149,13 @@ impl TodoListComponent {
         &self.todos
     }
 
-    pub fn add_todo(&mut self, t: Todo) {
+    pub fn add_todo(&mut self, t: Todo) -> Result<()> {
         self.todos.push(t);
         self.state.select(Some(self.todos.len() - 1));
-        self.save_to_disk().unwrap();
+        self.save_to_disk()?;
+        self.message_tx
+            .send(AppMessage::Flash(FlashMsg::info("Added todo")))?;
+        Ok(())
     }
 
     pub fn replace(&mut self, t: Todo, i: usize) {
@@ -203,12 +207,23 @@ impl TodoListComponent {
         }
     }
 
-    pub fn remove_current(&mut self) {
+    pub fn remove_current(&mut self) -> Result<()> {
         if let Some(selected) = self.state.selected() {
             self.todos.remove(selected);
             self.correct_selection();
             self.save_to_disk().unwrap();
+            self.message_tx
+                .send(AppMessage::Flash(FlashMsg::info("Removed todo")))?;
+            return Ok(());
         }
+        self.report_no_selection();
+        Ok(())
+    }
+
+    pub fn report_no_selection(&self) {
+        self.message_tx
+            .send(AppMessage::Flash(FlashMsg::err("No todo selected")))
+            .unwrap();
     }
 
     pub fn selected(&self) -> Option<(&Todo, usize)> {
@@ -222,10 +237,25 @@ impl TodoListComponent {
         if let Some(s) = self.state.selected() {
             // dont toggle if the todo is recurring
             if self.todos[s].metadata.recurring {
+                self.message_tx
+                    .send(AppMessage::Flash(FlashMsg::warn(
+                        "Can't mark recurring as finished",
+                    )))
+                    .unwrap();
                 return;
             }
             self.todos[s].toggle_finished();
             self.save_to_disk().unwrap();
+            let msg = if self.todos[s].metadata.finished {
+                "Marked todo as finished"
+            } else {
+                "Marked todo as unfinished"
+            };
+            self.message_tx
+                .send(AppMessage::Flash(FlashMsg::info(msg)))
+                .unwrap();
+        } else {
+            self.report_no_selection();
         }
     }
 
@@ -388,7 +418,7 @@ impl MainComponent for TodoListComponent {
         } else if key_match(&key, &self.keys.find_mode) {
             self.message_tx.send(AppMessage::InputState(State::Find))?;
         } else if key_match(&key, &self.keys.remove_todo) {
-            self.remove_current();
+            self.remove_current()?;
         } else if key_match(&key, &self.keys.submit) && self.move_mode {
             self.move_mode = false;
         }

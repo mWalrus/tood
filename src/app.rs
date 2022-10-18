@@ -1,6 +1,6 @@
 use super::components::SkimmerComponent;
 use super::components::TodoListComponent;
-use super::components::{notification::NotificationMessage, NotificationComponent};
+use super::components::{notification::FlashMsg, NotificationComponent};
 use crate::components::due_date::DueDateComponent;
 use crate::components::skimmer::SkimmerAction;
 use crate::components::todo_list::ListAction;
@@ -8,14 +8,12 @@ use crate::components::TodoInputComponent;
 use crate::components::{Component, MainComponent};
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::BarType;
+use crate::EVENT_TIMEOUT;
 use anyhow::Result;
 use crossterm::event;
 use crossterm::event::Event;
 use kanal::unbounded;
 use kanal::Receiver;
-use std::time::Duration;
-
-static POLL_DURATION: Duration = Duration::from_millis(1000);
 
 pub struct App {
     pub todo_list: TodoListComponent,
@@ -32,6 +30,7 @@ pub enum AppMessage {
     InputState(State),
     Skimmer(SkimmerAction),
     UpdateList(ListAction),
+    Flash(FlashMsg),
     RestoreTerminal,
     Quit,
 }
@@ -67,8 +66,8 @@ impl App {
         }
     }
 
-    fn poll(duration: Duration) -> Result<Option<Event>> {
-        if event::poll(duration)? {
+    fn poll() -> Result<Option<Event>> {
+        if event::poll(EVENT_TIMEOUT)? {
             Ok(Some(event::read()?))
         } else {
             Ok(None)
@@ -76,7 +75,7 @@ impl App {
     }
 
     pub fn poll_event(&mut self) -> Result<()> {
-        if let Some(Event::Key(ev)) = Self::poll(POLL_DURATION)? {
+        if let Some(Event::Key(ev)) = Self::poll()? {
             match self.state {
                 State::Normal | State::Move => {
                     self.todo_list.handle_input(ev)?;
@@ -105,33 +104,28 @@ impl App {
                     match state {
                         State::Find => {
                             self.todo_list.load_hintbar(BarType::FindMode);
-                            self.notification
-                                .set(NotificationMessage::info("Entered find mode"));
+                            self.notification.set(FlashMsg::info("Entered find mode"));
                             let todos = self.todo_list.todos_ref();
                             self.skimmer.skim(&todos);
                         }
                         State::EditTodo => {
                             self.todo_list.load_hintbar(BarType::EditMode);
-                            self.notification
-                                .set(NotificationMessage::info("Entered edit mode"));
+                            self.notification.set(FlashMsg::info("Entered edit mode"));
                             if let Some((t, i)) = self.todo_list.selected() {
                                 self.todo_input.populate_with(t, i);
                             }
                         }
                         State::AddTodo => {
                             self.todo_list.load_hintbar(BarType::EditMode);
-                            self.notification
-                                .set(NotificationMessage::info("Entered edit mode"));
+                            self.notification.set(FlashMsg::info("Entered edit mode"));
                         }
                         State::Normal => {
                             self.todo_list.load_hintbar(BarType::NormalMode);
-                            self.notification
-                                .set(NotificationMessage::info("Entered normal mode"));
+                            self.notification.set(FlashMsg::info("Entered normal mode"));
                         }
                         State::Move => {
                             self.todo_list.load_hintbar(BarType::MoveMode);
-                            self.notification
-                                .set(NotificationMessage::info("Entered move mode"));
+                            self.notification.set(FlashMsg::info("Entered move mode"));
                         }
                         _ => {}
                     }
@@ -144,8 +138,7 @@ impl App {
                         // NOTE: I'm not sure if I like how we set the state without the sender.
                         //       It's not wrong but it's not really elegant imo.
                         self.state = State::Normal;
-                        self.notification
-                            .set(NotificationMessage::info("Entered normal mode"));
+                        self.notification.set(FlashMsg::info("Entered normal mode"));
                     }
                     SkimmerAction::Skim => {
                         let todos = self.todo_list.todos_ref();
@@ -155,22 +148,17 @@ impl App {
                 AppMessage::UpdateList(list_action) => {
                     // placeholder
                     match list_action {
-                        ListAction::Add(t) => self.todo_list.add_todo(t),
+                        ListAction::Add(t) => self.todo_list.add_todo(t).unwrap(),
                         ListAction::Replace(t, i) => self.todo_list.replace(t, i),
                     }
                     self.todo_input.clear();
                     self.state = State::Normal;
-                    self.notification
-                        .set(NotificationMessage::info("Entered normal mode"));
+                    self.notification.set(FlashMsg::info("Entered normal mode"));
                 }
+                AppMessage::Flash(flash_message) => self.notification.set(flash_message),
                 AppMessage::RestoreTerminal => return Ok(PollOutcome::ReInitTerminal),
                 AppMessage::Quit => return Ok(PollOutcome::Break),
             }
-        }
-
-        // clear the current flashed notification from the screen
-        if let Ok(Some(_)) = self.notification.rx.try_recv() {
-            self.notification.clear();
         }
 
         Ok(PollOutcome::NoAction)

@@ -1,6 +1,5 @@
 use crate::app::{App, PollOutcome, State};
 use crate::components::{Component, MainComponent, StaticComponent};
-use crate::widgets::hint_bar::HintBar;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
@@ -34,8 +33,10 @@ pub fn run(mut app: App) -> TerminalResult<()> {
                 break;
             }
         }
+
+        app.notification.handle_queue()?;
     }
-    restore_terminal().unwrap();
+    restore_terminal()?;
     Ok(())
 }
 

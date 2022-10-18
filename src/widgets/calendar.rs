@@ -34,11 +34,7 @@ pub struct Calendar {
     style: Style,
 }
 
-impl Calendar {
-    pub fn toggle_visible(&mut self) {
-        self.is_visible = !self.is_visible;
-    }
-}
+impl Calendar {}
 
 impl Default for Calendar {
     fn default() -> Self {
