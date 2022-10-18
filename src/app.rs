@@ -104,28 +104,23 @@ impl App {
                     match state {
                         State::Find => {
                             self.todo_list.load_hintbar(BarType::FindMode);
-                            self.notification.set(FlashMsg::info("Entered find mode"));
                             let todos = self.todo_list.todos_ref();
                             self.skimmer.skim(&todos);
                         }
                         State::EditTodo => {
                             self.todo_list.load_hintbar(BarType::EditMode);
-                            self.notification.set(FlashMsg::info("Entered edit mode"));
                             if let Some((t, i)) = self.todo_list.selected() {
                                 self.todo_input.populate_with(t, i);
                             }
                         }
                         State::AddTodo => {
                             self.todo_list.load_hintbar(BarType::EditMode);
-                            self.notification.set(FlashMsg::info("Entered edit mode"));
                         }
                         State::Normal => {
                             self.todo_list.load_hintbar(BarType::NormalMode);
-                            self.notification.set(FlashMsg::info("Entered normal mode"));
                         }
                         State::Move => {
                             self.todo_list.load_hintbar(BarType::MoveMode);
-                            self.notification.set(FlashMsg::info("Entered move mode"));
                         }
                         _ => {}
                     }
@@ -146,14 +141,18 @@ impl App {
                     }
                 },
                 AppMessage::UpdateList(list_action) => {
-                    // placeholder
                     match list_action {
-                        ListAction::Add(t) => self.todo_list.add_todo(t).unwrap(),
-                        ListAction::Replace(t, i) => self.todo_list.replace(t, i),
+                        ListAction::Add(t) => {
+                            self.todo_list.add_todo(t)?;
+                            self.notification.set(FlashMsg::info("Added todo"));
+                        }
+                        ListAction::Replace(t, i) => {
+                            self.todo_list.replace(t, i)?;
+                            self.notification.set(FlashMsg::info("Edited todo"));
+                        }
                     }
                     self.todo_input.clear();
                     self.state = State::Normal;
-                    self.notification.set(FlashMsg::info("Entered normal mode"));
                 }
                 AppMessage::Flash(flash_message) => self.notification.set(flash_message),
                 AppMessage::RestoreTerminal => return Ok(PollOutcome::ReInitTerminal),

@@ -153,14 +153,13 @@ impl TodoListComponent {
         self.todos.push(t);
         self.state.select(Some(self.todos.len() - 1));
         self.save_to_disk()?;
-        self.message_tx
-            .send(AppMessage::Flash(FlashMsg::info("Added todo")))?;
         Ok(())
     }
 
-    pub fn replace(&mut self, t: Todo, i: usize) {
+    pub fn replace(&mut self, t: Todo, i: usize) -> Result<()> {
         let _ = std::mem::replace(&mut self.todos[i], t);
-        self.save_to_disk().unwrap();
+        self.save_to_disk()?;
+        Ok(())
     }
 
     pub fn save_to_disk(&self) -> io::Result<()> {
@@ -333,7 +332,7 @@ impl MainComponent for TodoListComponent {
 
         let border_style = if self.move_mode {
             Style::default()
-                .fg(Color::Green)
+                .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD)
         } else {
             Style::default().add_modifier(Modifier::BOLD)
@@ -341,6 +340,11 @@ impl MainComponent for TodoListComponent {
 
         let highlight_style = if dim {
             Style::default()
+        } else if self.move_mode {
+            Style::default()
+                .bg(Color::Blue)
+                .fg(Color::Black)
+                .add_modifier(Modifier::BOLD)
         } else {
             Style::default()
                 .bg(Color::Indexed(8))
