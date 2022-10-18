@@ -154,7 +154,7 @@ impl App {
         }
 
         // clear the current flashed notification from the screen
-        if self.notification.rx.try_recv().is_ok() {
+        if let Ok(Some(_)) = self.notification.rx.try_recv() {
             self.notification.clear();
         }
 

@@ -1,9 +1,6 @@
-use std::{
-    sync::mpsc::{self, Receiver, Sender},
-    thread,
-    time::Duration,
-};
+use std::{thread, time::Duration};
 
+use kanal::{bounded, Receiver, Sender};
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -27,7 +24,7 @@ pub struct NotificationComponent {
 
 impl NotificationComponent {
     pub fn new() -> Self {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = bounded(1);
         Self { rx, tx, msg: None }
     }
 
