@@ -33,8 +33,6 @@ pub fn run(mut app: App) -> TerminalResult<()> {
                 break;
             }
         }
-
-        app.notification.handle_queue()?;
     }
     restore_terminal()?;
     Ok(())

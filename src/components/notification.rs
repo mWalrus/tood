@@ -1,7 +1,8 @@
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 use anyhow::Result;
-use kanal::{unbounded, Receiver, Sender};
+use kanal::{bounded, Receiver, Sender};
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -16,39 +17,39 @@ use crate::EVENT_TIMEOUT;
 use super::StaticComponent;
 
 pub struct NotificationComponent {
-    pub rx: Receiver<()>,
-    tx: Sender<()>,
-    pub msg: Option<FlashMsg>,
+    pub msg: Arc<Mutex<Option<FlashMsg>>>,
 }
 
 // FIXME: currently the component fails to render whenever there are
 //        a lot of actions happening at once.
 impl NotificationComponent {
     pub fn new() -> Self {
-        let (tx, rx) = unbounded();
-        Self { rx, tx, msg: None }
-    }
-
-    pub fn set(&mut self, msg: FlashMsg) {
-        self.msg = Some(msg);
-        let tx = self.tx.clone();
-        thread::spawn(move || {
-            thread::sleep(EVENT_TIMEOUT);
-            tx.send(()).unwrap();
-        });
-    }
-
-    pub fn handle_queue(&mut self) -> Result<()> {
-        if (self.rx.try_recv()?).is_some() {
-            self.msg = None;
+        Self {
+            msg: Arc::new(Mutex::new(None)),
         }
-        Ok(())
+    }
+
+    pub fn flash(&mut self, msg: FlashMsg) {
+        let msg_clone = self.msg.clone();
+        thread::spawn(move || {
+            if let Ok(mut m) = msg_clone.lock() {
+                *m = Some(msg);
+            }
+            thread::sleep(EVENT_TIMEOUT);
+            if let Ok(mut m) = msg_clone.lock() {
+                *m = None;
+            }
+        });
     }
 }
 
 impl StaticComponent for NotificationComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
-        if let Some(msg) = &self.msg {
+        if let Ok(m) = self.msg.clone().try_lock() {
+            if m.is_none() {
+                return;
+            }
+            let msg = m.as_ref().unwrap();
             let notif_span = match msg.level {
                 MsgType::Error => Span::styled(
                     &msg.message,

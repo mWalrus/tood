@@ -133,7 +133,8 @@ impl App {
                         // NOTE: I'm not sure if I like how we set the state without the sender.
                         //       It's not wrong but it's not really elegant imo.
                         self.state = State::Normal;
-                        self.notification.set(FlashMsg::info("Entered normal mode"));
+                        self.notification
+                            .flash(FlashMsg::info("Entered normal mode"));
                     }
                     SkimmerAction::Skim => {
                         let todos = self.todo_list.todos_ref();
@@ -144,17 +145,17 @@ impl App {
                     match list_action {
                         ListAction::Add(t) => {
                             self.todo_list.add_todo(t)?;
-                            self.notification.set(FlashMsg::info("Added todo"));
+                            self.notification.flash(FlashMsg::info("Added todo"));
                         }
                         ListAction::Replace(t, i) => {
                             self.todo_list.replace(t, i)?;
-                            self.notification.set(FlashMsg::info("Edited todo"));
+                            self.notification.flash(FlashMsg::info("Edited todo"));
                         }
                     }
                     self.todo_input.clear();
                     self.state = State::Normal;
                 }
-                AppMessage::Flash(flash_message) => self.notification.set(flash_message),
+                AppMessage::Flash(flash_message) => self.notification.flash(flash_message),
                 AppMessage::RestoreTerminal => return Ok(PollOutcome::ReInitTerminal),
                 AppMessage::Quit => return Ok(PollOutcome::Break),
             }
