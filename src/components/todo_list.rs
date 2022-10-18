@@ -123,7 +123,7 @@ impl HintBars {
                 HintBar::edit_mode(keys.clone()),
                 HintBar::find_mode(keys.clone()),
                 HintBar::move_mode(keys.clone()),
-                HintBar::due_date_mode(keys.clone()),
+                HintBar::due_date_mode(keys),
             ],
         }
     }
@@ -136,7 +136,7 @@ impl TodoListComponent {
             state: ListState::default(),
             todos: todo_data.todos,
             keys: keys.clone(),
-            hintbars: HintBars::new(keys.clone()),
+            hintbars: HintBars::new(keys),
             move_mode: false,
             message_tx,
         };
@@ -282,11 +282,11 @@ impl TodoListComponent {
 
     pub fn load_hintbar(&mut self, bt: BarType) {
         let i = match bt {
-            BarType::NormalMode => 0,
-            BarType::EditMode => 1,
-            BarType::FindMode => 2,
-            BarType::MoveMode => 3,
-            BarType::DueDateMode => 4,
+            BarType::Normal => 0,
+            BarType::Edit => 1,
+            BarType::Find => 2,
+            BarType::Move => 3,
+            BarType::DueDate => 4,
         };
         self.hintbars.selected = i;
     }

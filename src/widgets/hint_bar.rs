@@ -8,11 +8,11 @@ use tui::{
 use crate::keys::keymap::SharedKeyList;
 
 pub enum BarType {
-    NormalMode,
-    MoveMode,
-    EditMode,
-    FindMode,
-    DueDateMode,
+    Normal,
+    Move,
+    Edit,
+    Find,
+    DueDate,
 }
 
 pub struct HintBar {

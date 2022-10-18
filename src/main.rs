@@ -12,7 +12,7 @@ pub(crate) static EVENT_TIMEOUT: Duration = Duration::from_millis(1000);
 
 fn main() -> Result<(), Box<dyn Error>> {
     let keys = SharedKeyList::new(ToodKeyList::init());
-    let app = App::new(keys.clone());
+    let app = App::new(keys);
 
     let res = ui::run(app);
 

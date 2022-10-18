@@ -57,10 +57,10 @@ impl App {
         App {
             todo_list: TodoListComponent::load(keys.clone(), sender.clone()),
             todo_input: TodoInputComponent::new(keys.clone(), sender.clone()),
-            skimmer: SkimmerComponent::new(keys.clone(), sender.clone()),
+            skimmer: SkimmerComponent::new(keys.clone(), sender),
             notification: NotificationComponent::new(),
             due_date: DueDateComponent::new(keys.clone()),
-            keys: keys.clone(),
+            keys,
             state: State::Normal,
             receiver,
         }
@@ -103,24 +103,24 @@ impl App {
                 AppMessage::InputState(state) => {
                     match state {
                         State::Find => {
-                            self.todo_list.load_hintbar(BarType::FindMode);
+                            self.todo_list.load_hintbar(BarType::Find);
                             let todos = self.todo_list.todos_ref();
-                            self.skimmer.skim(&todos);
+                            self.skimmer.skim(todos);
                         }
                         State::EditTodo => {
-                            self.todo_list.load_hintbar(BarType::EditMode);
+                            self.todo_list.load_hintbar(BarType::Edit);
                             if let Some((t, i)) = self.todo_list.selected() {
                                 self.todo_input.populate_with(t, i);
                             }
                         }
                         State::AddTodo => {
-                            self.todo_list.load_hintbar(BarType::EditMode);
+                            self.todo_list.load_hintbar(BarType::Edit);
                         }
                         State::Normal => {
-                            self.todo_list.load_hintbar(BarType::NormalMode);
+                            self.todo_list.load_hintbar(BarType::Normal);
                         }
                         State::Move => {
-                            self.todo_list.load_hintbar(BarType::MoveMode);
+                            self.todo_list.load_hintbar(BarType::Move);
                         }
                         _ => {}
                     }
@@ -129,7 +129,7 @@ impl App {
                 AppMessage::Skimmer(skim_action) => match skim_action {
                     SkimmerAction::ReportSelection(s) => {
                         self.todo_list.select(s);
-                        self.todo_list.load_hintbar(BarType::NormalMode);
+                        self.todo_list.load_hintbar(BarType::Normal);
                         // NOTE: I'm not sure if I like how we set the state without the sender.
                         //       It's not wrong but it's not really elegant imo.
                         self.state = State::Normal;
@@ -137,7 +137,7 @@ impl App {
                     }
                     SkimmerAction::Skim => {
                         let todos = self.todo_list.todos_ref();
-                        self.skimmer.skim(&todos);
+                        self.skimmer.skim(todos);
                     }
                 },
                 AppMessage::UpdateList(list_action) => {

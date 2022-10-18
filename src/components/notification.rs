@@ -39,7 +39,7 @@ impl NotificationComponent {
     }
 
     pub fn handle_queue(&mut self) -> Result<()> {
-        if let Some(_) = self.rx.try_recv()? {
+        if (self.rx.try_recv()?).is_some() {
             self.msg = None;
         }
         Ok(())
