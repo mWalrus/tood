@@ -147,7 +147,7 @@ impl StatefulWidget for TimePicker {
         let picker_area = self.block.inner(area);
         let mid_of_area = picker_area.x + picker_area.width / 2;
 
-        let hour_x = mid_of_area.saturating_sub(5);
+        let hour_x = mid_of_area.saturating_sub(2);
         let minute_x = mid_of_area + 1;
 
         self.block.render(area, buf);
@@ -157,10 +157,11 @@ impl StatefulWidget for TimePicker {
             return;
         }
 
+        // TODO: 12h time format
         // safe to unwrap since we init the `TimePickerState` with selections
         let (hour, minute) = (
-            format!(" {:>2} ", state.hour_state.selected().unwrap()),
-            format!(" {0:>2} ", state.minute_state.selected().unwrap()),
+            format!("{:0>2}", state.hour_state.selected().unwrap()),
+            format!("{:0>2}", state.minute_state.selected().unwrap()),
         );
 
         let (hour_style, minute_style) = match state.focus_state.0 {
