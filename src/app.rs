@@ -57,9 +57,9 @@ impl App {
         App {
             todo_list: TodoListComponent::load(keys.clone(), sender.clone()),
             todo_input: TodoInputComponent::new(keys.clone(), sender.clone()),
-            skimmer: SkimmerComponent::new(keys.clone(), sender),
+            skimmer: SkimmerComponent::new(keys.clone(), sender.clone()),
             notification: NotificationComponent::new(),
-            due_date: DueDateComponent::new(keys.clone()),
+            due_date: DueDateComponent::new(keys.clone(), sender),
             keys,
             state: State::Normal,
             receiver,
@@ -90,7 +90,7 @@ impl App {
                     self.skimmer.handle_input(ev)?;
                 }
                 State::DueDate => {
-                    todo!()
+                    self.due_date.handle_input(ev)?;
                 }
             }
         }
@@ -122,7 +122,9 @@ impl App {
                         State::Move => {
                             self.todo_list.load_hintbar(BarType::Move);
                         }
-                        _ => {}
+                        State::DueDate => {
+                            self.todo_list.load_hintbar(BarType::DueDate);
+                        }
                     }
                     self.state = state;
                 }

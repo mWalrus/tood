@@ -95,7 +95,7 @@ impl Default for ToodKeyList {
             add_todo:            ToodKeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()),
             external_editor:     ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL),
             edit_todo:           ToodKeyEvent::new(KeyCode::Char('e'), KeyModifiers::empty()),
-            open_calendar:       ToodKeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+            open_calendar:       ToodKeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL),
             remove_todo:         ToodKeyEvent::new(KeyCode::Char('d'), KeyModifiers::empty()),
             mark_recurring:      ToodKeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
             submit:              ToodKeyEvent::new(KeyCode::Enter,     KeyModifiers::empty()),

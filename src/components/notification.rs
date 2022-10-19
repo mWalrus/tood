@@ -18,8 +18,6 @@ pub struct NotificationComponent {
     pub msg: Arc<Mutex<Option<FlashMsg>>>,
 }
 
-// FIXME: currently the component fails to render whenever there are
-//        a lot of actions happening at once.
 impl NotificationComponent {
     pub fn new() -> Self {
         Self {

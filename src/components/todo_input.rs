@@ -143,6 +143,9 @@ impl Component for TodoInputComponent {
             self.message_tx.send(AppMessage::RestoreTerminal)?;
         } else if key_match(&key, &self.keys.mark_recurring) {
             self.metadata.recurring = !self.metadata.recurring;
+        } else if key_match(&key, &self.keys.open_calendar) {
+            self.message_tx
+                .send(AppMessage::InputState(State::DueDate))?;
         } else {
             input_backend::to_input_request(Event::Key(key)).and_then(|r| self.name.handle(r));
         }

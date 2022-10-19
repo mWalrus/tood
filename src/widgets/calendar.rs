@@ -20,7 +20,69 @@ impl Cell {
     }
 }
 
-pub type CalendarState = ListState;
+pub struct CalendarState(ListState, usize);
+
+impl CalendarState {
+    pub fn new(num_days: usize) -> Self {
+        Self(ListState::default(), num_days)
+    }
+
+    pub fn right(&mut self) {
+        let i = match self.0.selected() {
+            Some(i) => {
+                if i >= self.1 - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.0.select(Some(i));
+    }
+
+    pub fn left(&mut self) {
+        let i = match self.0.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.1 - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.0.select(Some(i));
+    }
+
+    pub fn down(&mut self) {
+        let i = match self.0.selected() {
+            Some(i) => {
+                if i + 7 >= self.1 - 1 {
+                    self.1 - 1
+                } else {
+                    i + 7
+                }
+            }
+            None => 0,
+        };
+        self.0.select(Some(i));
+    }
+
+    pub fn up(&mut self) {
+        let i = match self.0.selected() {
+            Some(i) => {
+                if i < 7 {
+                    0
+                } else {
+                    i - 7
+                }
+            }
+            None => 0,
+        };
+        self.0.select(Some(i));
+    }
+}
 
 // FIXME: add method `with_selected_date` which can be used when editing
 //        an existing todo
@@ -34,7 +96,14 @@ pub struct Calendar {
     style: Style,
 }
 
-impl Calendar {}
+impl Calendar {
+    pub fn num_days(&self) -> usize {
+        self.cells.len()
+    }
+    pub fn block(&mut self, block: Block<'static>) {
+        self.block = block;
+    }
+}
 
 impl Default for Calendar {
     fn default() -> Self {
@@ -78,7 +147,7 @@ impl Default for Calendar {
 }
 
 impl StatefulWidget for Calendar {
-    type State = ListState;
+    type State = CalendarState;
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         buf.set_style(area, self.style);
         // get the inner area
@@ -137,7 +206,7 @@ impl StatefulWidget for Calendar {
                 height: cell_height,
             };
 
-            let cell_style = if let Some(s) = state.selected() {
+            let cell_style = if let Some(s) = state.0.selected() {
                 if s == i {
                     Style::default()
                         .bg(Color::Indexed(8))
@@ -148,7 +217,7 @@ impl StatefulWidget for Calendar {
             } else if cell.is_today {
                 // FIXME: move this to a better place
                 // set the current state
-                state.select(Some(i));
+                state.0.select(Some(i));
                 Style::default()
                     .bg(Color::Indexed(8))
                     .add_modifier(Modifier::BOLD)
