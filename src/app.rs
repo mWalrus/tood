@@ -147,10 +147,12 @@ impl App {
                     match list_action {
                         ListAction::Add(t) => {
                             self.todo_list.add_todo(t)?;
+                            self.todo_list.load_hintbar(BarType::Normal);
                             self.notification.flash(FlashMsg::info("Added todo"));
                         }
                         ListAction::Replace(t, i) => {
                             self.todo_list.replace(t, i)?;
+                            self.todo_list.load_hintbar(BarType::Normal);
                             self.notification.flash(FlashMsg::info("Edited todo"));
                         }
                     }
