@@ -7,12 +7,13 @@ use tui::{
 
 use crate::keys::keymap::SharedKeyList;
 
+#[repr(usize)]
 pub enum BarType {
-    Normal,
-    Move,
-    Edit,
-    Find,
-    DueDate,
+    Normal = 0,
+    Move = 1,
+    Edit = 2,
+    Find = 3,
+    DueDate = 4,
 }
 
 pub struct HintBar {

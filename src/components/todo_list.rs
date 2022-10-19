@@ -280,15 +280,8 @@ impl TodoListComponent {
         self.state.select(Some(selection));
     }
 
-    pub fn load_hintbar(&mut self, bt: BarType) {
-        let i = match bt {
-            BarType::Normal => 0,
-            BarType::Edit => 1,
-            BarType::Find => 2,
-            BarType::Move => 3,
-            BarType::DueDate => 4,
-        };
-        self.hintbars.selected = i;
+    pub fn load_hintbar(&mut self, bar_type: BarType) {
+        self.hintbars.selected = bar_type as usize;
     }
 }
 

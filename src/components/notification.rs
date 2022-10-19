@@ -1,8 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use anyhow::Result;
-use kanal::{bounded, Receiver, Sender};
 use tui::{
     backend::Backend,
     layout::Rect,
