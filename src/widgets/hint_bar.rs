@@ -9,11 +9,11 @@ use crate::keys::keymap::SharedKeyList;
 
 #[repr(usize)]
 pub enum BarType {
-    Normal = 0,
-    Edit = 1,
-    Move = 2,
-    Find = 3,
-    DueDate = 4,
+    Normal,
+    Edit,
+    Move,
+    Find,
+    DueDate,
 }
 
 pub struct HintBar {
