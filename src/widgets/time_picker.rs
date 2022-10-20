@@ -145,7 +145,7 @@ impl StatefulWidget for TimePicker {
         buf.set_style(area, self.style);
 
         let picker_area = self.block.inner(area);
-        let mid_of_area = picker_area.x + picker_area.width / 2;
+        let mid_of_area = (picker_area.x + picker_area.width / 2).saturating_sub(1);
 
         let hour_x = mid_of_area.saturating_sub(2);
         let minute_x = mid_of_area + 1;
