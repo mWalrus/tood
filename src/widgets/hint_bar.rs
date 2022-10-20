@@ -10,8 +10,8 @@ use crate::keys::keymap::SharedKeyList;
 #[repr(usize)]
 pub enum BarType {
     Normal = 0,
-    Move = 1,
-    Edit = 2,
+    Edit = 1,
+    Move = 2,
     Find = 3,
     DueDate = 4,
 }
@@ -129,11 +129,11 @@ impl HintBar {
                 bind: keys.submit.to_string(),
             },
             Hint {
-                name: "Up",
+                name: "Move up",
                 bind: keys.move_up.to_string(),
             },
             Hint {
-                name: "Down",
+                name: "Move down",
                 bind: keys.move_down.to_string(),
             },
         ];

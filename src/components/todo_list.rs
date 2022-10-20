@@ -121,8 +121,8 @@ impl HintBars {
             items: [
                 HintBar::normal_mode(keys.clone()),
                 HintBar::edit_mode(keys.clone()),
-                HintBar::find_mode(keys.clone()),
                 HintBar::move_mode(keys.clone()),
+                HintBar::find_mode(keys.clone()),
                 HintBar::due_date_mode(keys),
             ],
         }
