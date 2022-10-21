@@ -45,6 +45,14 @@ impl TimePickerState {
         }
     }
 
+    pub fn with_hm(h: u32, m: u32) -> Self {
+        Self {
+            hour_state: h as usize,
+            minute_state: m as usize,
+            focus_state: PickerFocusState(PickerFocus::Hour),
+        }
+    }
+
     pub fn toggle_focus(&mut self) {
         self.focus_state.toggle();
     }

@@ -126,6 +126,11 @@ impl App {
                         }
                         State::DueDate => {
                             self.todo_list.load_hintbar(BarType::DueDate);
+                            if self.state == State::EditTodo {
+                                if let Some(dt) = self.todo_input.get_due_date() {
+                                    self.due_date.set_date_time(dt);
+                                }
+                            }
                         }
                     }
                     self.state = state;

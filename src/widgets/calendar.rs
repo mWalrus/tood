@@ -9,6 +9,8 @@ use tui::{
 
 use crate::components::utils;
 
+pub type YMDN = (i32, u32, u32, usize);
+
 #[derive(Debug, Clone)]
 pub struct Cell(u32);
 
@@ -21,7 +23,7 @@ impl Cell {
 pub struct CalendarState {
     year: usize,
     month: usize,
-    selected: usize,
+    day: usize,
     upper_bounds: usize,
 }
 
@@ -31,40 +33,40 @@ impl CalendarState {
         Self {
             year: y as usize,
             month: m as usize,
-            selected: d as usize,
-            upper_bounds: n as usize - 1,
+            day: d as usize,
+            upper_bounds: n - 1,
         }
     }
 
     #[inline(always)]
     pub fn right(&mut self) {
-        if self.selected >= self.upper_bounds {
-            self.selected = 0;
+        if self.day >= self.upper_bounds {
+            self.day = 0;
         } else {
-            self.selected += 1;
+            self.day += 1;
         }
     }
 
     #[inline(always)]
     pub fn left(&mut self) {
-        self.selected = self.selected.checked_sub(1).unwrap_or(self.upper_bounds);
+        self.day = self.day.checked_sub(1).unwrap_or(self.upper_bounds);
     }
 
     #[inline(always)]
     pub fn down(&mut self) {
-        self.selected = self.upper_bounds.min(self.selected + 7);
+        self.day = self.upper_bounds.min(self.day + 7);
     }
 
     #[inline(always)]
     pub fn up(&mut self) {
-        self.selected = 0.max(self.selected - 7);
+        self.day = 0.max(self.day - 7);
     }
 
     pub fn set_date(&mut self, day: usize) -> Result<()> {
         if day > self.upper_bounds {
             return Err(anyhow!("Failed to set date: out of bounds"));
         }
-        self.selected = day;
+        self.day = day;
         Ok(())
     }
 
@@ -73,15 +75,10 @@ impl CalendarState {
         (
             self.year as i32,
             self.month as u32,
-            self.selected as u32 + 1,
+            self.day as u32 + 1, // add 1 since its 0 indexed
         )
     }
 }
-
-pub type YMDN = (i32, u32, u32, u32);
-
-// FIXME: add method `with_selected_date` which can be used when editing
-//        an existing todo
 
 #[derive(Debug, Clone)]
 pub struct Calendar {
@@ -97,6 +94,11 @@ impl Calendar {
     pub fn today(&self) -> u32 {
         self.ymdn.2
     }
+
+    pub fn num_days(&self) -> usize {
+        self.cells.len()
+    }
+
     pub fn block(&mut self, block: Block<'static>) {
         self.block = block;
     }
@@ -139,7 +141,7 @@ impl Default for Calendar {
             nth_day_of_the_month += one_day;
         }
 
-        let ymdn = (dt.year(), month, d.day0(), cells.len() as u32);
+        let ymdn = (dt.year(), month, d.day0(), cells.len());
 
         Self {
             empty_days: days_since_monday as usize,
@@ -212,7 +214,7 @@ impl StatefulWidget for Calendar {
                 height: cell_height,
             };
 
-            let cell_style = if i == state.selected {
+            let cell_style = if i == state.day {
                 Style::default()
                     .bg(Color::Indexed(8))
                     .add_modifier(Modifier::BOLD)

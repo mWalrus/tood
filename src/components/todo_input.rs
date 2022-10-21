@@ -79,6 +79,10 @@ impl TodoInputComponent {
         self.metadata.due_date = Some(dt);
     }
 
+    pub fn get_due_date(&self) -> Option<NaiveDateTime> {
+        self.metadata.due_date
+    }
+
     pub fn clear(&mut self) {
         self.name = Input::default();
         self.description = String::default();

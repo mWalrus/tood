@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use crossterm::event::KeyEvent;
 use kanal::Sender;
 use tui::{
@@ -67,6 +67,23 @@ impl DueDateComponent {
                 .unwrap();
         }
         self.time_picker_state = TimePickerState::with_current_time();
+    }
+
+    pub fn set_date_time(&mut self, dt: NaiveDateTime) {
+        let date = dt.date();
+
+        let year = date.year();
+        let month = date.month();
+        let day = date.day0();
+        let num_days = self.calendar.num_days();
+
+        let time = dt.time();
+
+        let hour = time.hour();
+        let minute = time.minute();
+
+        self.calendar_state = CalendarState::new((year, month, day, num_days));
+        self.time_picker_state = TimePickerState::with_hm(hour, minute);
     }
 }
 
