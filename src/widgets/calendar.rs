@@ -1,88 +1,84 @@
+use anyhow::{anyhow, Result};
 use chrono::{Datelike, Duration, Local, NaiveDate, Weekday};
 use tui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
-    widgets::{Block, ListState, StatefulWidget, Widget},
+    widgets::{Block, StatefulWidget, Widget},
 };
 
 use crate::components::utils;
 
 #[derive(Debug, Clone)]
-pub struct Cell {
-    date: u32,
-    is_today: bool,
-}
+pub struct Cell(u32);
 
 impl Cell {
-    fn with_date(date: u32, is_today: bool) -> Self {
-        Cell { date, is_today }
+    fn with_date(date: u32) -> Self {
+        Cell(date)
     }
 }
 
-pub struct CalendarState(ListState, usize);
+pub struct CalendarState {
+    year: usize,
+    month: usize,
+    selected: usize,
+    upper_bounds: usize,
+}
 
 impl CalendarState {
-    pub fn new(num_days: usize) -> Self {
-        Self(ListState::default(), num_days)
+    pub fn new(ymdn: YMDN) -> Self {
+        let (y, m, d, n) = ymdn;
+        Self {
+            year: y as usize,
+            month: m as usize,
+            selected: d as usize,
+            upper_bounds: n as usize - 1,
+        }
     }
 
+    #[inline(always)]
     pub fn right(&mut self) {
-        let i = match self.0.selected() {
-            Some(i) => {
-                if i >= self.1 - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.0.select(Some(i));
+        if self.selected >= self.upper_bounds {
+            self.selected = 0;
+        } else {
+            self.selected += 1;
+        }
     }
 
+    #[inline(always)]
     pub fn left(&mut self) {
-        let i = match self.0.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.1 - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.0.select(Some(i));
+        self.selected = self.selected.checked_sub(1).unwrap_or(self.upper_bounds);
     }
 
+    #[inline(always)]
     pub fn down(&mut self) {
-        let i = match self.0.selected() {
-            Some(i) => {
-                if i + 7 >= self.1 - 1 {
-                    self.1 - 1
-                } else {
-                    i + 7
-                }
-            }
-            None => 0,
-        };
-        self.0.select(Some(i));
+        self.selected = self.upper_bounds.min(self.selected + 7);
     }
 
+    #[inline(always)]
     pub fn up(&mut self) {
-        let i = match self.0.selected() {
-            Some(i) => {
-                if i < 7 {
-                    0
-                } else {
-                    i - 7
-                }
-            }
-            None => 0,
-        };
-        self.0.select(Some(i));
+        self.selected = 0.max(self.selected - 7);
+    }
+
+    pub fn set_date(&mut self, day: usize) -> Result<()> {
+        if day > self.upper_bounds {
+            return Err(anyhow!("Failed to set date: out of bounds"));
+        }
+        self.selected = day;
+        Ok(())
+    }
+
+    #[inline(always)]
+    pub fn ymd(&self) -> (i32, u32, u32) {
+        (
+            self.year as i32,
+            self.month as u32,
+            self.selected as u32 + 1,
+        )
     }
 }
+
+pub type YMDN = (i32, u32, u32, u32);
 
 // FIXME: add method `with_selected_date` which can be used when editing
 //        an existing todo
@@ -92,19 +88,27 @@ pub struct Calendar {
     pub empty_days: usize,
     pub cells: Vec<Cell>,
     pub is_visible: bool,
+    ymdn: YMDN,
     block: Block<'static>,
     style: Style,
 }
 
 impl Calendar {
-    pub fn num_days(&self) -> usize {
-        self.cells.len()
+    pub fn today(&self) -> u32 {
+        self.ymdn.2
     }
     pub fn block(&mut self, block: Block<'static>) {
         self.block = block;
     }
+
+    pub fn ymdn(&self) -> YMDN {
+        self.ymdn
+    }
 }
 
+// TODO: move this implementation to `Month`.
+//       my thought is that we can load in maybe 6 months worth of calendar
+//       and using the state we can move through them for setting due dates.
 impl Default for Calendar {
     fn default() -> Self {
         let mut cells: Vec<Cell> = Vec::new();
@@ -129,17 +133,19 @@ impl Default for Calendar {
 
         while nth_day_of_the_month.month() == month {
             let nth_day = nth_day_of_the_month.day();
-            cells.push(Cell::with_date(
-                nth_day_of_the_month.day(),
-                nth_day == d.day(),
-            ));
+
+            cells.push(Cell::with_date(nth_day));
+
             nth_day_of_the_month += one_day;
         }
+
+        let ymdn = (dt.year(), month, d.day0(), cells.len() as u32);
 
         Self {
             empty_days: days_since_monday as usize,
             cells,
             is_visible: false,
+            ymdn,
             block: utils::default_block("Calendar"),
             style: Style::default(),
         }
@@ -196,7 +202,7 @@ impl StatefulWidget for Calendar {
 
         // render each cell
         for (i, cell) in self.cells.into_iter().enumerate() {
-            let cell_text = format!("{:>2}", cell.date);
+            let cell_text = format!("{:>2}", cell.0);
 
             // define a cell area which we can use to render the number
             let cell_area = Rect {
@@ -206,18 +212,7 @@ impl StatefulWidget for Calendar {
                 height: cell_height,
             };
 
-            let cell_style = if let Some(s) = state.0.selected() {
-                if s == i {
-                    Style::default()
-                        .bg(Color::Indexed(8))
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default()
-                }
-            } else if cell.is_today {
-                // FIXME: move this to a better place
-                // set the current state
-                state.0.select(Some(i));
+            let cell_style = if i == state.selected {
                 Style::default()
                     .bg(Color::Indexed(8))
                     .add_modifier(Modifier::BOLD)

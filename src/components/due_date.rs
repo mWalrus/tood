@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use crossterm::event::KeyEvent;
 use kanal::Sender;
 use tui::{
@@ -18,10 +19,8 @@ use crate::{
     },
 };
 
-use super::{utils, Component};
+use super::{notification::FlashMsg, utils, Component};
 
-// FIXME: move to due_date component
-// FIXME: implement From<NaiveDateTime> for ListState
 pub struct DueDateComponent {
     pub calendar: Calendar,
     pub calendar_state: CalendarState,
@@ -40,16 +39,34 @@ enum DueDateWidgetHasFocus {
 impl DueDateComponent {
     pub fn new(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
         let calendar = Calendar::default();
-        let num_days = calendar.num_days();
+        let ymdn = calendar.ymdn();
         Self {
             calendar,
-            calendar_state: CalendarState::new(num_days),
+            calendar_state: CalendarState::new(ymdn),
             time_picker: TimePicker::default(),
             time_picker_state: TimePickerState::with_current_time(),
             focused_widget: DueDateWidgetHasFocus::Cal,
             keys,
             message_tx,
         }
+    }
+
+    pub fn date_time(&self) -> NaiveDateTime {
+        let (y, mo, d) = self.calendar_state.ymd();
+        let (h, mi) = self.time_picker_state.hour_minute();
+        let date = NaiveDate::from_ymd(y, mo, d);
+        let time = NaiveTime::from_hms(h, mi, 0);
+        NaiveDateTime::new(date, time)
+    }
+
+    pub fn reset_date_time(&mut self) {
+        let today = self.calendar.today();
+        if let Err(e) = self.calendar_state.set_date(today as usize) {
+            self.message_tx
+                .send(AppMessage::Flash(FlashMsg::err(e)))
+                .unwrap();
+        }
+        self.time_picker_state = TimePickerState::with_current_time();
     }
 }
 
@@ -124,11 +141,16 @@ impl Component for DueDateComponent {
         }
         // this should always be handled no matter the focus
         if key_match(&key, &self.keys.back) {
+            self.reset_date_time();
             // set to AddTodo since it just changes the state
             // while EditTodo copies the currently selected todo's
             // contents into the edit view fields
             self.message_tx
                 .send(AppMessage::InputState(State::AddTodo))?;
+        } else if key_match(&key, &self.keys.submit) {
+            let date_time = self.date_time();
+            self.reset_date_time();
+            self.message_tx.send(AppMessage::SetDueDate(date_time))?;
         }
         Ok(())
     }

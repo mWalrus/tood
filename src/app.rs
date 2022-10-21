@@ -10,6 +10,7 @@ use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::BarType;
 use crate::EVENT_TIMEOUT;
 use anyhow::Result;
+use chrono::NaiveDateTime;
 use crossterm::event;
 use crossterm::event::Event;
 use kanal::unbounded;
@@ -31,6 +32,7 @@ pub enum AppMessage {
     Skimmer(SkimmerAction),
     UpdateList(ListAction),
     Flash(FlashMsg),
+    SetDueDate(NaiveDateTime),
     RestoreTerminal,
     Quit,
 }
@@ -144,20 +146,25 @@ impl App {
                     }
                 },
                 AppMessage::UpdateList(list_action) => {
-                    match list_action {
+                    let msg = match list_action {
                         ListAction::Add(t) => {
                             self.todo_list.add_todo(t)?;
-                            self.todo_list.load_hintbar(BarType::Normal);
-                            self.notification.flash(FlashMsg::info("Added todo"));
+                            "Added todo"
                         }
                         ListAction::Replace(t, i) => {
                             self.todo_list.replace(t, i)?;
-                            self.todo_list.load_hintbar(BarType::Normal);
-                            self.notification.flash(FlashMsg::info("Edited todo"));
+                            "Edited todo"
                         }
-                    }
+                    };
+
+                    self.notification.flash(FlashMsg::info(msg));
+                    self.todo_list.load_hintbar(BarType::Normal);
                     self.todo_input.clear();
                     self.state = State::Normal;
+                }
+                AppMessage::SetDueDate(d) => {
+                    self.todo_input.set_due_date(d);
+                    self.state = State::AddTodo;
                 }
                 AppMessage::Flash(flash_message) => self.notification.flash(flash_message),
                 AppMessage::RestoreTerminal => return Ok(PollOutcome::ReInitTerminal),

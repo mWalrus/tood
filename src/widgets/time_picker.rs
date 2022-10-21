@@ -3,7 +3,7 @@ use tui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
-    widgets::{Block, ListState, StatefulWidget, Widget},
+    widgets::{Block, StatefulWidget, Widget},
 };
 
 use crate::components::utils;
@@ -27,8 +27,8 @@ impl PickerFocusState {
 }
 
 pub struct TimePickerState {
-    hour_state: ListState,
-    minute_state: ListState,
+    hour_state: usize,
+    minute_state: usize,
     focus_state: PickerFocusState,
 }
 
@@ -38,14 +38,9 @@ impl TimePickerState {
         let hour = now.hour() as usize;
         let minute = now.minute() as usize;
 
-        let mut hour_state = ListState::default();
-        hour_state.select(Some(hour));
-        let mut minute_state = ListState::default();
-        minute_state.select(Some(minute));
-
         Self {
-            hour_state,
-            minute_state,
+            hour_state: hour,
+            minute_state: minute,
             focus_state: PickerFocusState(PickerFocus::Hour),
         }
     }
@@ -57,28 +52,18 @@ impl TimePickerState {
     pub fn next(&mut self) {
         match self.focus_state.0 {
             PickerFocus::Hour => {
-                let i = if let Some(s) = self.hour_state.selected() {
-                    if s + 1 > 23 {
-                        0
-                    } else {
-                        s + 1
-                    }
+                if self.hour_state + 1 > 23 {
+                    self.hour_state = 0;
                 } else {
-                    unreachable!()
-                };
-                self.hour_state.select(Some(i));
+                    self.hour_state += 1;
+                }
             }
             PickerFocus::Minute => {
-                let i = if let Some(s) = self.minute_state.selected() {
-                    if s + 1 > 59 {
-                        0
-                    } else {
-                        s + 1
-                    }
+                if self.minute_state + 1 > 59 {
+                    self.minute_state = 0;
                 } else {
-                    unreachable!() // we init the state with selections
-                };
-                self.minute_state.select(Some(i));
+                    self.minute_state += 1;
+                }
             }
         }
     }
@@ -86,30 +71,24 @@ impl TimePickerState {
     pub fn prev(&mut self) {
         match self.focus_state.0 {
             PickerFocus::Hour => {
-                let i = if let Some(s) = self.hour_state.selected() {
-                    if s.checked_sub(1).is_none() {
-                        23
-                    } else {
-                        s - 1
-                    }
+                if self.hour_state.checked_sub(1).is_none() {
+                    self.hour_state = 23;
                 } else {
-                    unreachable!()
-                };
-                self.hour_state.select(Some(i));
+                    self.hour_state -= 1;
+                }
             }
             PickerFocus::Minute => {
-                let i = if let Some(s) = self.minute_state.selected() {
-                    if s.checked_sub(1).is_none() {
-                        59
-                    } else {
-                        s - 1
-                    }
+                if self.minute_state.checked_sub(1).is_none() {
+                    self.minute_state = 59;
                 } else {
-                    unreachable!() // we init the state with selections
-                };
-                self.minute_state.select(Some(i));
+                    self.minute_state -= 1;
+                }
             }
         }
+    }
+
+    pub fn hour_minute(&self) -> (u32, u32) {
+        (self.hour_state as u32, self.minute_state as u32)
     }
 }
 
@@ -160,8 +139,8 @@ impl StatefulWidget for TimePicker {
         // TODO: 12h time format
         // safe to unwrap since we init the `TimePickerState` with selections
         let (hour, minute) = (
-            format!("{:0>2}", state.hour_state.selected().unwrap()),
-            format!("{:0>2}", state.minute_state.selected().unwrap()),
+            format!("{:0>2}", state.hour_state),
+            format!("{:0>2}", state.minute_state),
         );
 
         let (hour_style, minute_style) = match state.focus_state.0 {

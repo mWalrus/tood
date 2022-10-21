@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::Local;
+use chrono::{Local, NaiveDateTime};
 use crossterm::event::{Event, KeyEvent};
 use kanal::Sender;
 use tui::{
@@ -73,6 +73,10 @@ impl TodoInputComponent {
         self.metadata = todo.metadata.clone();
         self.is_editing_existing = true;
         self.todo_index = i;
+    }
+
+    pub fn set_due_date(&mut self, dt: NaiveDateTime) {
+        self.metadata.due_date = Some(dt);
     }
 
     pub fn clear(&mut self) {

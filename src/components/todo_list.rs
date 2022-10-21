@@ -1,7 +1,7 @@
 use std::io;
 
 use anyhow::Result;
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, NaiveDateTime};
 use crossterm::event::KeyEvent;
 use kanal::Sender;
 use serde::{Deserialize, Serialize};
@@ -45,6 +45,7 @@ impl Todo {
 pub struct TodoMetadata {
     pub added_at: DateTime<Local>,
     pub edited_at: Option<DateTime<Local>>,
+    pub due_date: Option<NaiveDateTime>,
     pub recurring: bool,
     pub finished: bool,
 }
@@ -69,7 +70,14 @@ impl TodoMetadata {
             "never".into()
         };
 
+        let due_date = if let Some(dd) = self.due_date {
+            dd.format(TIME_FORMAT).to_string()
+        } else {
+            "not set".into()
+        };
+
         c.push(("Edited: ", edited_at));
+        c.push(("Due date: ", due_date));
         c.push(("Recurring: ", yes_no(self.recurring).into()));
         c.push(("Finished: ", yes_no(self.finished).into()));
         c
@@ -81,6 +89,7 @@ impl Default for TodoMetadata {
         Self {
             added_at: Local::now(),
             edited_at: None,
+            due_date: None,
             recurring: false,
             finished: false,
         }
