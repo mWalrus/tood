@@ -17,8 +17,8 @@ use crate::keys::key_match;
 use crate::keys::keymap::SharedKeyList;
 
 use super::todo_list::Todo;
-use super::utils;
 use super::Component;
+use super::{utils, HIGHLIGHT_SYMBOL};
 
 pub enum SkimmerAction {
     Skim,
@@ -179,7 +179,7 @@ impl Component for SkimmerComponent {
                     .bg(Color::Indexed(8))
                     .add_modifier(Modifier::BOLD),
             )
-            .highlight_symbol("> ");
+            .highlight_symbol(HIGHLIGHT_SYMBOL);
         f.render_widget(Clear, chunks[0]);
         f.render_widget(Clear, chunks[1]);
 

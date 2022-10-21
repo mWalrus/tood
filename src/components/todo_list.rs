@@ -14,7 +14,7 @@ use tui::Frame;
 
 use super::notification::FlashMsg;
 use super::utils::Dim;
-use super::{utils, MainComponent};
+use super::{utils, MainComponent, HIGHLIGHT_SYMBOL};
 use crate::app::{AppMessage, State};
 use crate::keys::key_match;
 use crate::keys::keymap::SharedKeyList;
@@ -351,7 +351,7 @@ impl MainComponent for TodoListComponent {
                     .dim(dim),
             )
             .highlight_style(highlight_style)
-            .highlight_symbol("> ");
+            .highlight_symbol(HIGHLIGHT_SYMBOL);
         f.render_stateful_widget(items, chunks[0], &mut self.state);
 
         let data_chunks = Layout::default()

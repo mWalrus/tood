@@ -16,6 +16,8 @@ use anyhow::Result;
 
 use tui::{backend::Backend, Frame};
 
+pub static HIGHLIGHT_SYMBOL: &str = " > ";
+
 pub trait Component {
     fn draw<B: Backend>(&mut self, _f: &mut Frame<B>) {}
     fn handle_input(&mut self, key: KeyEvent) -> Result<()>;
