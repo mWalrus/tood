@@ -39,10 +39,17 @@ enum DueDateWidgetHasFocus {
 impl DueDateComponent {
     pub fn new(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
         let calendar = Calendar::default();
-        let ymdn = calendar.ymdn();
+
+        let month = calendar.current_month();
+        let (day, num_days) = if let Some(month) = month {
+            (month.default_day(), month.num_days())
+        } else {
+            (1, 31)
+        };
+
         Self {
             calendar,
-            calendar_state: CalendarState::new(ymdn),
+            calendar_state: CalendarState::new(day, num_days),
             time_picker: TimePicker::default(),
             time_picker_state: TimePickerState::with_current_time(),
             focused_widget: DueDateWidgetHasFocus::Cal,
@@ -51,39 +58,48 @@ impl DueDateComponent {
         }
     }
 
-    pub fn date_time(&self) -> NaiveDateTime {
-        let (y, mo, d) = self.calendar_state.ymd();
+    pub fn get_date_time(&self) -> NaiveDateTime {
+        let month_index = self.calendar_state.selected_month();
+        let month = self.calendar.get_month_by_index(month_index).unwrap();
+        let year = month.year();
+        let month_num = month.num();
+        let day = self.calendar_state.day();
+
         let (h, mi) = self.time_picker_state.hour_minute();
-        let date = NaiveDate::from_ymd(y, mo, d);
+        let date = NaiveDate::from_ymd(year, month_num, day);
         let time = NaiveTime::from_hms(h, mi, 0);
         NaiveDateTime::new(date, time)
     }
 
     pub fn reset_date_time(&mut self) {
-        let today = self.calendar.today();
-        if let Err(e) = self.calendar_state.set_date(today as usize) {
-            self.message_tx
-                .send(AppMessage::Flash(FlashMsg::err(e)))
-                .unwrap();
+        if let Some(current_month) = self.calendar.current_month() {
+            let today = current_month.default_day();
+            if let Err(e) = self.calendar_state.set_date(today as usize) {
+                self.message_tx
+                    .send(AppMessage::Flash(FlashMsg::err(e)))
+                    .unwrap();
+            }
+            self.time_picker_state = TimePickerState::with_current_time();
         }
-        self.time_picker_state = TimePickerState::with_current_time();
     }
 
     pub fn set_date_time(&mut self, dt: NaiveDateTime) {
         let date = dt.date();
+        let month = date.month0();
 
-        let year = date.year();
-        let month = date.month();
-        let day = date.day0();
-        let num_days = self.calendar.num_days();
+        if let Some(m) = self.calendar.get_month_index_by_num(month as usize) {
+            let month = self.calendar.get_month_by_index(m).unwrap();
+            let day = date.day0();
+            let num_days = month.num_days();
 
-        let time = dt.time();
+            let time = dt.time();
 
-        let hour = time.hour();
-        let minute = time.minute();
+            let hour = time.hour();
+            let minute = time.minute();
 
-        self.calendar_state = CalendarState::new((year, month, day, num_days));
-        self.time_picker_state = TimePickerState::with_hm(hour, minute);
+            self.calendar_state = CalendarState::with_date(m, day as usize, num_days);
+            self.time_picker_state = TimePickerState::with_hm(hour, minute);
+        }
     }
 }
 
@@ -140,6 +156,22 @@ impl Component for DueDateComponent {
                     self.calendar_state.right();
                 } else if key_match(&key, &self.keys.alt_move_down) {
                     self.focused_widget = DueDateWidgetHasFocus::Time;
+                } else if key_match(&key, &self.keys.alt_move_left) {
+                    self.calendar_state.prev_month();
+                    if let Some(m) = self
+                        .calendar
+                        .get_month_by_index(self.calendar_state.selected_month())
+                    {
+                        self.calendar_state.set_num_days(m.num_days());
+                    }
+                } else if key_match(&key, &self.keys.alt_move_right) {
+                    self.calendar_state.next_month();
+                    if let Some(m) = self
+                        .calendar
+                        .get_month_by_index(self.calendar_state.selected_month())
+                    {
+                        self.calendar_state.set_num_days(m.num_days());
+                    }
                 }
             }
             DueDateWidgetHasFocus::Time => {
@@ -165,7 +197,7 @@ impl Component for DueDateComponent {
             self.message_tx
                 .send(AppMessage::InputState(State::AddTodo))?;
         } else if key_match(&key, &self.keys.submit) {
-            let date_time = self.date_time();
+            let date_time = self.get_date_time();
             self.reset_date_time();
             self.message_tx.send(AppMessage::SetDueDate(date_time))?;
         }

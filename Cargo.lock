@@ -616,6 +616,7 @@ dependencies = [
  "edit",
  "fuzzy-matcher",
  "kanal",
+ "num-traits",
  "serde",
  "toml",
  "tui",
