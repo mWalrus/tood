@@ -61,12 +61,11 @@ impl DueDateComponent {
     pub fn get_date_time(&self) -> NaiveDateTime {
         let month_index = self.calendar_state.selected_month();
         let month = self.calendar.get_month_by_index(month_index).unwrap();
-        let year = month.year();
-        let month_num = month.num();
+        let (y, m) = month.ym();
         let day = self.calendar_state.day();
 
         let (h, mi) = self.time_picker_state.hour_minute();
-        let date = NaiveDate::from_ymd(year, month_num, day);
+        let date = NaiveDate::from_ymd(y, m, day);
         let time = NaiveTime::from_hms(h, mi, 0);
         NaiveDateTime::new(date, time)
     }
@@ -93,7 +92,6 @@ impl DueDateComponent {
             let num_days = month.num_days();
 
             let time = dt.time();
-
             let hour = time.hour();
             let minute = time.minute();
 
@@ -131,6 +129,7 @@ impl Component for DueDateComponent {
         }
 
         // FIXME: avoid clone
+        //        idk if we can avoid it since we cannot derive copy on block
         f.render_stateful_widget(
             self.calendar.clone(),
             calendar_rect,

@@ -125,7 +125,7 @@ impl StatefulWidget for Calendar {
         let (mut offset_x, mut offset_y) = (calendar_area.x, calendar_area.y + (cell_height * 2));
 
         // pad for empty day cells
-        for _ in 0..month.first_week_padding {
+        for _ in 0..month.padding {
             buf.set_string(offset_x, offset_y, "    ", Style::default());
             offset_x += 4;
         }
