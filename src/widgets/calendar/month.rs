@@ -61,4 +61,8 @@ impl Month {
     pub fn num_days(&self) -> usize {
         self.days as usize
     }
+
+    pub fn formatted_month_year(&self) -> String {
+        format!("{} {}", self.name, self.year)
+    }
 }

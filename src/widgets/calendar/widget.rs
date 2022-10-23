@@ -78,9 +78,9 @@ impl StatefulWidget for Calendar {
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let month_i = state.selected_month;
 
-        let (name, name_length, padding, num_days) = {
+        let (header, padding, num_days) = {
             let m = self.get_month_by_index(month_i).unwrap();
-            (m.name, m.name.len(), m.padding, m.num_days())
+            (m.formatted_month_year(), m.padding, m.num_days())
         };
 
         buf.set_style(area, self.style);
@@ -94,17 +94,13 @@ impl StatefulWidget for Calendar {
             return;
         }
 
-        // we do not need account for offsets size since the entirity
-        // of the calendar will be rendered in the area.
-        // ...
-
-        let area_mid = calendar_area.x + (calendar_area.width / 2) - 1;
-        let month_header_x = area_mid - name_length as u16 / 2;
+        let header_x_mid = calendar_area.x + (calendar_area.width / 2);
+        let month_header_x = header_x_mid - header.len() as u16 / 2;
 
         buf.set_string(
             month_header_x,
             calendar_area.y,
-            name,
+            header,
             Style::default().add_modifier(Modifier::BOLD),
         );
 
@@ -112,7 +108,7 @@ impl StatefulWidget for Calendar {
         let cell_mid = (cell_width / 2).saturating_sub(1);
         let cell_height = 2;
 
-        // print header row
+        // print day row
         for (i, day) in ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
             .iter()
             .enumerate()
