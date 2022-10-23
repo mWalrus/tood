@@ -32,6 +32,7 @@ impl KeyConfig {
         confy::load("tood", Some("key-config"))
     }
 
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_list(self) -> ToodKeyList {
         let dkl = ToodKeyList::default();
 

@@ -6,7 +6,7 @@ use tui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 
-use super::{CalendarState, Month};
+use super::{month::MONTH_COUNT, CalendarState, Month};
 use crate::components::utils;
 
 #[derive(Debug, Clone)]
@@ -16,37 +16,13 @@ pub struct Calendar {
     style: Style,
 }
 
-impl Calendar {
-    pub fn block(&mut self, block: Block<'static>) {
-        self.block = block;
-    }
-
-    pub fn get_month_index_by_num(&self, month_num: usize) -> Option<usize> {
-        self.months.iter().position(|m| m.num == month_num as u32)
-    }
-
-    pub fn get_month_by_index(&self, i: usize) -> Option<Month> {
-        if i > self.months.len() {
-            return None;
-        }
-        Some(self.months[i].clone())
-    }
-
-    pub fn current_month(&self) -> Option<Month> {
-        if self.months.is_empty() {
-            return None;
-        }
-        Some(self.months[0].clone())
-    }
-}
-
 impl Default for Calendar {
     fn default() -> Self {
-        let mut months = Vec::new();
+        let mut months = Vec::with_capacity(MONTH_COUNT);
         let now = Local::now().date_naive();
         let mut current_month = NaiveDate::from_ymd(now.year(), now.month(), 1);
 
-        for _ in 0..6 {
+        for _ in 0..MONTH_COUNT {
             let year = current_month.year();
             let month = current_month.month();
             let (next_month_year, next_month) = if month == 12 {
@@ -70,11 +46,42 @@ impl Default for Calendar {
     }
 }
 
+impl Calendar {
+    pub fn block(&mut self, block: Block<'static>) {
+        self.block = block;
+    }
+
+    pub fn get_month_and_index_by_num(&self, month_num: usize) -> Option<(usize, &Month)> {
+        self.months
+            .iter()
+            .enumerate()
+            .find(|m| m.1.num == month_num as u32)
+    }
+
+    pub fn get_month_by_index(&self, i: usize) -> Option<&Month> {
+        if i > self.months.len() {
+            return None;
+        }
+        Some(&self.months[i])
+    }
+
+    pub fn current_month(&self) -> Option<&Month> {
+        if self.months.is_empty() {
+            return None;
+        }
+        Some(&self.months[0])
+    }
+}
+
 impl StatefulWidget for Calendar {
     type State = CalendarState;
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let month_i = state.selected_month;
-        let month = self.get_month_by_index(month_i).unwrap();
+
+        let (name, name_length, padding, num_days) = {
+            let m = self.get_month_by_index(month_i).unwrap();
+            (m.name, m.name.len(), m.padding, m.num_days())
+        };
 
         buf.set_style(area, self.style);
         // get the inner area
@@ -92,12 +99,12 @@ impl StatefulWidget for Calendar {
         // ...
 
         let area_mid = calendar_area.x + (calendar_area.width / 2) - 1;
-        let month_header_x = area_mid - month.name.len() as u16 / 2;
+        let month_header_x = area_mid - name_length as u16 / 2;
 
         buf.set_string(
             month_header_x,
             calendar_area.y,
-            month.name,
+            name,
             Style::default().add_modifier(Modifier::BOLD),
         );
 
@@ -121,17 +128,17 @@ impl StatefulWidget for Calendar {
             );
         }
 
-        //                                                give space for header row ⬇
+        //                                                give space for header rows ⬇
         let (mut offset_x, mut offset_y) = (calendar_area.x, calendar_area.y + (cell_height * 2));
 
         // pad for empty day cells
-        for _ in 0..month.padding {
+        for _ in 0..padding {
             buf.set_string(offset_x, offset_y, "    ", Style::default());
             offset_x += 4;
         }
 
         // render each day
-        for d in 1..=month.num_days() {
+        for d in 1..=num_days {
             let cell_text = format!("{:>2}", d);
 
             // define a cell area which we can use to render the number

@@ -40,8 +40,7 @@ impl DueDateComponent {
     pub fn new(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
         let calendar = Calendar::default();
 
-        let month = calendar.current_month();
-        let (day, num_days) = if let Some(month) = month {
+        let (day, num_days) = if let Some(month) = calendar.current_month() {
             (month.default_day(), month.num_days())
         } else {
             (1, 31)
@@ -61,11 +60,11 @@ impl DueDateComponent {
     pub fn get_date_time(&self) -> NaiveDateTime {
         let month_index = self.calendar_state.selected_month();
         let month = self.calendar.get_month_by_index(month_index).unwrap();
-        let (y, m) = month.ym();
-        let day = self.calendar_state.day();
+        let (y, mo) = month.ym();
+        let d = self.calendar_state.selected_day();
 
         let (h, mi) = self.time_picker_state.hour_minute();
-        let date = NaiveDate::from_ymd(y, m, day);
+        let date = NaiveDate::from_ymd(y, mo, d);
         let time = NaiveTime::from_hms(h, mi, 0);
         NaiveDateTime::new(date, time)
     }
@@ -86,16 +85,15 @@ impl DueDateComponent {
         let date = dt.date();
         let month = date.month0();
 
-        if let Some(m) = self.calendar.get_month_index_by_num(month as usize) {
-            let month = self.calendar.get_month_by_index(m).unwrap();
+        if let Some((i, m)) = self.calendar.get_month_and_index_by_num(month as usize) {
             let day = date.day0();
-            let num_days = month.num_days();
+            let num_days = m.num_days();
 
             let time = dt.time();
             let hour = time.hour();
             let minute = time.minute();
 
-            self.calendar_state = CalendarState::with_date(m, day as usize, num_days);
+            self.calendar_state = CalendarState::with_date(i, day as usize, num_days);
             self.time_picker_state = TimePickerState::with_hm(hour, minute);
         }
     }
@@ -178,9 +176,9 @@ impl Component for DueDateComponent {
                     self.time_picker_state.prev();
                 } else if key_match(&key, &self.keys.move_down) {
                     self.time_picker_state.next();
-                } else if key_match(&key, &self.keys.move_left) {
-                    self.time_picker_state.toggle_focus();
-                } else if key_match(&key, &self.keys.move_right) {
+                } else if key_match(&key, &self.keys.move_left)
+                    || key_match(&key, &self.keys.move_right)
+                {
                     self.time_picker_state.toggle_focus();
                 } else if key_match(&key, &self.keys.alt_move_down) {
                     self.focused_widget = DueDateWidgetHasFocus::Cal;

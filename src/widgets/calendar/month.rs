@@ -1,7 +1,23 @@
 use chrono::{Datelike, Local, NaiveDate, Weekday};
-use num_traits::FromPrimitive;
 
-#[derive(Debug, Clone)]
+pub static NAMES: &[&str] = &[
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+];
+
+pub static MONTH_COUNT: usize = 6;
+
+#[derive(Debug, Clone, Copy)]
 pub struct Month {
     pub name: &'static str,
     pub num: u32,
@@ -17,7 +33,7 @@ impl Month {
         let first_monday = d.week(Weekday::Mon).first_day();
         let days_since_monday = d.signed_duration_since(first_monday).num_days();
 
-        let name = chrono::Month::from_u32(m).unwrap().name();
+        let name = NAMES[m as usize - 1];
 
         Self {
             name,

@@ -35,7 +35,7 @@ impl CalendarState {
     }
 
     #[inline(always)]
-    pub fn day(&self) -> u32 {
+    pub fn selected_day(&self) -> u32 {
         self.selected_day as u32
     }
 
