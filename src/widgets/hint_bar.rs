@@ -162,6 +162,18 @@ impl HintBar {
                 name: "Right",
                 bind: keys.move_right.to_string(),
             },
+            Hint {
+                name: "Swap focus",
+                bind: keys.alt_move_down.to_string(),
+            },
+            Hint {
+                name: "Next month",
+                bind: keys.alt_move_right.to_string(),
+            },
+            Hint {
+                name: "Prev month",
+                bind: keys.alt_move_left.to_string(),
+            },
         ];
         Self { hints }
     }
