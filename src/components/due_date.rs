@@ -69,19 +69,18 @@ impl DueDateComponent {
         NaiveDateTime::new(date, time)
     }
 
-    pub fn reset_date_time(&mut self) {
+    pub fn reset_date_time(&mut self) -> Result<()> {
         if let Some(current_month) = self.calendar.current_month() {
             let today = current_month.default_day();
             if let Err(e) = self.calendar_state.set_date(today as usize) {
-                self.message_tx
-                    .send(AppMessage::Flash(FlashMsg::err(e)))
-                    .unwrap();
+                self.message_tx.send(AppMessage::Flash(FlashMsg::err(e)))?;
             }
             self.time_picker_state = TimePickerState::with_current_time();
         }
+        Ok(())
     }
 
-    pub fn set_date_time(&mut self, dt: NaiveDateTime) {
+    pub fn set_date_time(&mut self, dt: NaiveDateTime) -> Result<()> {
         let date = dt.date();
         let month = date.month0();
 
@@ -93,9 +92,13 @@ impl DueDateComponent {
             let hour = time.hour();
             let minute = time.minute();
 
-            self.calendar_state = CalendarState::with_date(i, day as usize, num_days);
             self.time_picker_state = TimePickerState::with_hm(hour, minute);
+            match CalendarState::with_date(i, day as usize, num_days) {
+                Ok(state) => self.calendar_state = state,
+                Err(e) => self.message_tx.send(AppMessage::Flash(FlashMsg::err(e)))?,
+            }
         }
+        Ok(())
     }
 }
 
@@ -187,7 +190,7 @@ impl Component for DueDateComponent {
         }
         // this should always be handled no matter the focus
         if key_match(&key, &self.keys.back) {
-            self.reset_date_time();
+            self.reset_date_time()?;
             // set to AddTodo since it just changes the state
             // while EditTodo copies the currently selected todo's
             // contents into the edit view fields
@@ -195,7 +198,7 @@ impl Component for DueDateComponent {
                 .send(AppMessage::InputState(State::AddTodo))?;
         } else if key_match(&key, &self.keys.submit) {
             let date_time = self.get_date_time();
-            self.reset_date_time();
+            self.reset_date_time()?;
             self.message_tx.send(AppMessage::SetDueDate(date_time))?;
         }
         Ok(())

@@ -85,7 +85,7 @@ impl TodoInputComponent {
 
     pub fn clear(&mut self) {
         self.name = Input::default();
-        self.description = String::default();
+        self.description.clear();
         self.metadata = TodoMetadata::default();
         self.is_editing_existing = false;
     }

@@ -64,12 +64,12 @@ impl SkimmerComponent {
 
     pub fn clear(&mut self) {
         self.state = ListState::default();
-        self.matches = Vec::new();
+        self.matches.clear();
         self.input.reset();
     }
 
     pub fn skim(&mut self, todos: &[Todo]) {
-        let mut matches: Vec<SkimMatch> = Vec::new();
+        self.matches.clear();
         let matcher = Box::new(SkimMatcherV2::default());
         for (i, todo) in todos.iter().enumerate() {
             if let Some((score, indices)) = matcher.fuzzy_indices(&todo.name, self.input.value()) {
@@ -79,14 +79,13 @@ impl SkimmerComponent {
                     indices,
                     score,
                 };
-                matches.push(m);
+                self.matches.push(m);
             }
         }
-        matches.sort_by(|a, b| a.score.cmp(&b.score));
-        self.matches = matches;
+        self.matches.sort_by(|a, b| a.score.cmp(&b.score));
 
         if !self.matches.is_empty() {
-            self.state.select(Some(0));
+            self.state.select(None);
         }
     }
 
@@ -154,7 +153,7 @@ impl Component for SkimmerComponent {
             .matches
             .iter()
             .map(|m| {
-                let mut spans: Vec<Span> = Vec::new();
+                let mut spans: Vec<Span> = Vec::with_capacity(m.text.len());
                 for (i, c) in m.text.chars().enumerate() {
                     if m.indices.contains(&i) {
                         spans.push(Span::styled(

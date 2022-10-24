@@ -61,7 +61,7 @@ impl TodoMetadata {
             }
         }
 
-        let mut c = vec![];
+        let mut c = Vec::with_capacity(5);
         c.push(("Added: ", self.added_at.format(TIME_FORMAT).to_string()));
 
         let edited_at = if let Some(ea) = self.edited_at {
@@ -374,8 +374,9 @@ impl MainComponent for TodoListComponent {
                 .block(utils::default_block("Description").dim(dim));
             f.render_widget(description, data_chunks[0]);
 
-            let mut list_items: Vec<ListItem> = Vec::new();
-            for md in t.metadata.to_formatted() {
+            let formatted_metadata = t.metadata.to_formatted();
+            let mut list_items: Vec<ListItem> = Vec::with_capacity(formatted_metadata.len());
+            for md in formatted_metadata {
                 let spans = Spans::from(vec![
                     Span::styled(md.0, Style::default().add_modifier(Modifier::BOLD)),
                     Span::raw(md.1.to_string()),

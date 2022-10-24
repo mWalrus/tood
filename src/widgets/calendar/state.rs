@@ -1,8 +1,8 @@
-use anyhow::{anyhow, Result};
+use super::month::MONTH_COUNT;
 
 pub struct CalendarState {
     pub selected_month: usize,
-    pub month_count: usize,
+    pub num_months: usize,
     pub selected_day: usize,
     pub num_days: usize,
 }
@@ -11,24 +11,27 @@ impl CalendarState {
     pub fn new(day: usize, num_days: usize) -> Self {
         Self {
             selected_month: 0,
-            month_count: 6,
+            num_months: MONTH_COUNT,
             selected_day: day,
             num_days,
         }
     }
 
-    pub fn with_date(month: usize, day: usize, num_days: usize) -> Self {
-        Self {
+    pub fn with_date(month: usize, day: usize, num_days: usize) -> Result<Self, &'static str> {
+        if month > MONTH_COUNT || day > num_days {
+            return Err("Invalid date");
+        }
+        Ok(Self {
             selected_month: month,
-            month_count: 6,
+            num_months: MONTH_COUNT,
             selected_day: day,
             num_days,
-        }
+        })
     }
 
-    pub fn set_date(&mut self, day: usize) -> Result<()> {
+    pub fn set_date(&mut self, day: usize) -> Result<(), &'static str> {
         if day > self.num_days {
-            return Err(anyhow!("Failed to set date: out of bounds"));
+            return Err("Failed to set date: out of bounds");
         }
         self.selected_day = day;
         Ok(())
@@ -54,7 +57,7 @@ impl CalendarState {
 
     #[inline(always)]
     pub fn next_month(&mut self) {
-        self.selected_month = (self.month_count - 1).min(self.selected_month + 1);
+        self.selected_month = (self.num_months - 1).min(self.selected_month + 1);
     }
 
     #[inline(always)]

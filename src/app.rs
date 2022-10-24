@@ -128,7 +128,7 @@ impl App {
                             self.todo_list.load_hintbar(BarType::DueDate);
                             if self.state == State::EditTodo {
                                 if let Some(dt) = self.todo_input.get_due_date() {
-                                    self.due_date.set_date_time(dt);
+                                    self.due_date.set_date_time(dt)?;
                                 }
                             }
                         }
@@ -139,8 +139,7 @@ impl App {
                     SkimmerAction::ReportSelection(s) => {
                         self.todo_list.select(s);
                         self.todo_list.load_hintbar(BarType::Normal);
-                        // NOTE: I'm not sure if I like how we set the state without the sender.
-                        //       It's not wrong but it's not really elegant imo.
+
                         self.state = State::Normal;
                         self.notification
                             .flash(FlashMsg::info("Entered normal mode"));
