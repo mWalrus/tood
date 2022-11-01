@@ -19,7 +19,7 @@ anyhow = "1.0.65"
 dhat = { version = "0.3", optional = true }
 
 [dependencies.confy]
-git = "https://github.com/mWalrus/confy"
+version = "0.5"
 default-features = false
 features = ["ron_conf"]
 
