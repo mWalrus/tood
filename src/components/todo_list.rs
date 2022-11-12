@@ -428,6 +428,8 @@ impl MainComponent for TodoListComponent {
             self.remove_current()?;
         } else if key_match(&key, &self.keys.submit) && self.move_mode {
             self.move_mode = false;
+            self.message_tx
+                .send(AppMessage::InputState(State::Normal))?;
         }
         Ok(())
     }
