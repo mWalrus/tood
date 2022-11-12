@@ -84,8 +84,10 @@ impl SkimmerComponent {
         }
         self.matches.sort_by(|a, b| a.score.cmp(&b.score));
 
-        if !self.matches.is_empty() {
+        if self.matches.is_empty() {
             self.state.select(None);
+        } else {
+            self.state.select(Some(0));
         }
     }
 
