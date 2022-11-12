@@ -339,9 +339,9 @@ dependencies = [
 
 [[package]]
 name = "kanal"
-version = "0.1.0-pre1"
+version = "0.1.0-pre6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bec74d6fb49fafe0f1c3c168a9e793e363a5a2be763c52c564c76bc45b5c22fb"
+checksum = "953549c3c643e3311621cd45c97cad396aedeb04dd42c324a196346ba67f7f9f"
 dependencies = [
  "lock_api",
  "pin-project-lite",
