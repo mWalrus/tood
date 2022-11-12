@@ -94,6 +94,10 @@ impl HintBar {
                 bind: keys.mark_recurring.to_string(),
             },
             Hint {
+                name: "Due date",
+                bind: keys.open_calendar.to_string(),
+            },
+            Hint {
                 name: "Save",
                 bind: keys.submit.to_string(),
             },
