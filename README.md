@@ -1,6 +1,6 @@
 # Tood: a simple TUI todo application
 
-![Demo](./media/tood-demo.gif)
+![Demo](./media/demo.gif)
 
 ## Install
 1. `git clone https://github.com/mWalrus/tood.git`
