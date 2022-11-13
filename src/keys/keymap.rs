@@ -87,10 +87,10 @@ pub struct ToodKeyList {
 impl Default for ToodKeyList {
     fn default() -> Self {
        Self {
-            move_up:             ToodKeyEvent::new(KeyCode::Char('k'), KeyModifiers::empty()),
-            move_down:           ToodKeyEvent::new(KeyCode::Char('j'), KeyModifiers::empty()),
-            move_left:           ToodKeyEvent::new(KeyCode::Char('h'), KeyModifiers::empty()),
-            move_right:          ToodKeyEvent::new(KeyCode::Char('l'), KeyModifiers::empty()),
+            move_up:             ToodKeyEvent::new(KeyCode::Up, KeyModifiers::empty()),
+            move_down:           ToodKeyEvent::new(KeyCode::Down, KeyModifiers::empty()),
+            move_left:           ToodKeyEvent::new(KeyCode::Left, KeyModifiers::empty()),
+            move_right:          ToodKeyEvent::new(KeyCode::Right, KeyModifiers::empty()),
             alt_move_up:         ToodKeyEvent::new(KeyCode::BackTab,   KeyModifiers::SHIFT),
             alt_move_down:       ToodKeyEvent::new(KeyCode::Tab,       KeyModifiers::empty()),
             alt_move_left:       ToodKeyEvent::new(KeyCode::Char('H'), KeyModifiers::SHIFT),

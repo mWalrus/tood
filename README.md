@@ -14,13 +14,13 @@
 Every keybind in this application is configurable in [RON](https://github.com/ron-rs/ron).
 Create the file `$HOME/.config/tood/key-config.ron` and add your keybinds there.
 
-Default navigation keybinds are VIM-like.
-
-Example for using arrow up and down to move:
+Change movement keys to VIM-like bindings:
 ```ron
 (
-  move_up: Some(( code: Up, modifiers: ( bits: 0,),)),
-  move_down: Some(( code: Down, modifiers: ( bits: 0,),)),
+  move_up: Some(( code: Char('k'), modifiers: ( bits: 0,),)),
+  move_down: Some(( code: Char('j'), modifiers: ( bits: 0,),)),
+  move_left: Some(( code: Char('h'), modifiers: ( bits: 0,),)),
+  move_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
 )
 ```
 
