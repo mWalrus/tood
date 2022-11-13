@@ -17,12 +17,10 @@
 - [x] Edit
   - [x] Edit todo descriptions in $EDITOR
 - [x] Delete
-- [ ] Metadata
+- [x] Metadata
   - [x] Date and time added
   - [x] Date and time edited (empty if never edited)
-  - [ ] Due date
-    - [ ] Inline time/date highlighting (e.g. "do something __at 1:30 pm tomorrow__")
-      - [ ] Parse due date from matches
+  - [x] Due date
 - [x] Recurring todos
   - Not sure if we want more functionality surrounding this.
 - [x] Reorganize todos (move places)
