@@ -95,6 +95,14 @@ Sleep 500ms
 # --- Skimmer ---
 Type "f"
 Sleep 300ms
+Type "nent"
+Sleep 500ms
+Tab
+Sleep 100ms
+Enter
+Sleep 500ms
+Type "f"
+Sleep 300ms
 Type "just because"
 Sleep 500ms
 Tab
