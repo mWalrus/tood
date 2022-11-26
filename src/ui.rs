@@ -1,5 +1,5 @@
 use crate::app::{App, PollOutcome, State};
-use crate::components::{Component, MainComponent, StaticComponent};
+use crate::components::Component;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
@@ -45,19 +45,19 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         }
         State::AddTodo | State::EditTodo => {
             app.todo_list.draw(f, true);
-            app.todo_input.draw(f);
+            app.todo_input.draw(f, false);
         }
         State::Find => {
             app.todo_list.draw(f, true);
-            app.skimmer.draw(f);
+            app.skimmer.draw(f, false);
         }
         State::DueDate => {
             app.todo_list.draw(f, true);
-            app.due_date.draw(f);
+            app.due_date.draw(f, false);
         }
     }
     // draws notification if it exists
-    app.notification.draw(f);
+    app.notification.draw(f, false);
 }
 
 type TerminalResult<T> = std::result::Result<T, Box<dyn Error>>;

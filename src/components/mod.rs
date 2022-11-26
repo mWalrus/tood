@@ -19,15 +19,8 @@ use tui::{backend::Backend, Frame};
 pub static HIGHLIGHT_SYMBOL: &str = " > ";
 
 pub trait Component {
-    fn draw<B: Backend>(&mut self, _f: &mut Frame<B>) {}
-    fn handle_input(&mut self, key: KeyEvent) -> Result<()>;
-}
-
-pub trait StaticComponent {
-    fn draw<B: Backend>(&mut self, _f: &mut Frame<B>) {}
-}
-
-pub trait MainComponent {
-    fn draw<B: Backend>(&mut self, _f: &mut Frame<B>, _dim: bool) {}
-    fn handle_input(&mut self, key: KeyEvent) -> Result<()>;
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool);
+    fn handle_input(&mut self, _key: KeyEvent) -> Result<()> {
+        Ok(())
+    }
 }

@@ -14,7 +14,7 @@ use tui::Frame;
 
 use super::notification::FlashMsg;
 use super::utils::Dim;
-use super::{utils, MainComponent, HIGHLIGHT_SYMBOL};
+use super::{utils, Component, HIGHLIGHT_SYMBOL};
 use crate::app::{AppMessage, State};
 use crate::keys::key_match;
 use crate::keys::keymap::SharedKeyList;
@@ -294,7 +294,7 @@ impl TodoListComponent {
     }
 }
 
-impl MainComponent for TodoListComponent {
+impl Component for TodoListComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool) {
         let size = f.size();
         let hintbar = &self.hintbars.items[self.hintbars.selected];

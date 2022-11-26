@@ -92,7 +92,7 @@ impl TodoInputComponent {
 }
 
 impl Component for TodoInputComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _dim: bool) {
         let rect = utils::centered_rect(f.size());
 
         let chunks = Layout::default()

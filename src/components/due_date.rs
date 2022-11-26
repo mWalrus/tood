@@ -103,7 +103,7 @@ impl DueDateComponent {
 }
 
 impl Component for DueDateComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>) {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _dim: bool) {
         let calendar_rect = utils::calendar_rect(f.size());
         let picker_rect = Rect {
             height: 3,
