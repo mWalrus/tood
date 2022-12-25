@@ -20,7 +20,8 @@ impl Default for Calendar {
     fn default() -> Self {
         let mut months = Vec::with_capacity(MONTH_COUNT);
         let now = Local::now().date_naive();
-        let mut current_month = NaiveDate::from_ymd(now.year(), now.month(), 1);
+        // FIXME: handle OOB unwrap
+        let mut current_month = NaiveDate::from_ymd_opt(now.year(), now.month(), 1).unwrap();
 
         for _ in 0..MONTH_COUNT {
             let year = current_month.year();
@@ -30,7 +31,9 @@ impl Default for Calendar {
             } else {
                 (year, month + 1)
             };
-            let month_duration = NaiveDate::from_ymd(next_month_year, next_month, 1)
+            // FIXME: handle OOB unwrap
+            let month_duration = NaiveDate::from_ymd_opt(next_month_year, next_month, 1)
+                .unwrap()
                 .signed_duration_since(current_month);
 
             months.push(Month::new(year, month, month_duration.num_days() as u8));

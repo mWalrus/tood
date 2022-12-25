@@ -28,7 +28,8 @@ pub struct Month {
 
 impl Month {
     pub fn new(y: i32, m: u32, days: u8) -> Self {
-        let d = NaiveDate::from_ymd(y, m, 1);
+        // FIXME: handle OOB failure
+        let d = NaiveDate::from_ymd_opt(y, m, 1).unwrap();
 
         let first_monday = d.week(Weekday::Mon).first_day();
         let days_since_monday = d.signed_duration_since(first_monday).num_days();

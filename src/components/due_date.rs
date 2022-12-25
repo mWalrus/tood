@@ -64,8 +64,9 @@ impl DueDateComponent {
         let d = self.calendar_state.selected_day();
 
         let (h, mi) = self.time_picker_state.hour_minute();
-        let date = NaiveDate::from_ymd(y, mo, d);
-        let time = NaiveTime::from_hms(h, mi, 0);
+        // FIXME: handle OOB failure
+        let date = NaiveDate::from_ymd_opt(y, mo, d).unwrap();
+        let time = NaiveTime::from_hms_opt(h, mi, 0).unwrap();
         NaiveDateTime::new(date, time)
     }
 
