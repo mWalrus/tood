@@ -610,7 +610,7 @@ dependencies = [
 [[package]]
 name = "shared_derive"
 version = "0.1.0"
-source = "git+https://github.com/mWalrus/tui-utils#b622ce1047525360849a1d6dc51d9169da4022c1"
+source = "git+https://github.com/mWalrus/tui-utils#c10a9351c744b8fdae10066dc46753d2953c011d"
 dependencies = [
  "quote",
  "syn",
@@ -795,7 +795,7 @@ dependencies = [
 [[package]]
 name = "tui-utils"
 version = "0.1.0"
-source = "git+https://github.com/mWalrus/tui-utils#b622ce1047525360849a1d6dc51d9169da4022c1"
+source = "git+https://github.com/mWalrus/tui-utils#c10a9351c744b8fdae10066dc46753d2953c011d"
 dependencies = [
  "anyhow",
  "crossterm",
