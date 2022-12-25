@@ -8,12 +8,13 @@ use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph};
+use tui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
 use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 use tui_utils::component::Component;
 use tui_utils::keys::key_match;
+use tui_utils::state::BoundedState;
 
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
@@ -34,7 +35,7 @@ pub struct SkimMatch {
 }
 
 pub struct SkimmerComponent {
-    pub state: ListState,
+    pub state: BoundedState,
     pub input: Input,
     pub matches: Vec<SkimMatch>,
     keys: SharedKeyList,
@@ -54,7 +55,7 @@ impl From<(usize, &Todo)> for SkimMatch {
 impl SkimmerComponent {
     pub fn new(keys: SharedKeyList) -> Self {
         Self {
-            state: ListState::default(),
+            state: BoundedState::default(),
             input: Input::default(),
             matches: Vec::new(),
             keys,
@@ -62,7 +63,7 @@ impl SkimmerComponent {
     }
 
     pub fn clear(&mut self) {
-        self.state = ListState::default();
+        self.state = BoundedState::default();
         self.matches.clear();
         self.input.reset();
     }
@@ -82,44 +83,25 @@ impl SkimmerComponent {
             }
         }
         self.matches.sort_by(|a, b| a.score.cmp(&b.score));
+        self.state.update_boundary_from_vec(&self.matches);
 
         if self.matches.is_empty() {
-            self.state.select(None);
+            self.state.deselect();
         } else {
-            self.state.select(Some(0));
+            self.state.select(0).unwrap();
         }
     }
 
     pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.matches.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
+        self.state.next();
     }
 
     pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.matches.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
+        self.state.prev();
     }
 
     pub fn selected_match(&self) -> Option<&SkimMatch> {
-        if let Some(i) = self.state.selected() {
+        if let Some(i) = self.state.inner().selected() {
             Some(&self.matches[i])
         } else {
             None
@@ -186,7 +168,7 @@ impl Component for SkimmerComponent {
         f.render_widget(Clear, chunks[1]);
 
         f.render_widget(skimmer_input, chunks[0]);
-        f.render_stateful_widget(items, chunks[1], &mut self.state);
+        f.render_stateful_widget(items, chunks[1], &mut self.state.inner_mut());
         f.set_cursor(
             chunks[0].x + (self.input.cursor() as u16).min(width) + 1,
             chunks[0].y + 1,
