@@ -10,10 +10,11 @@ use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
-use tui::widgets::{List, ListItem, ListState, Paragraph};
+use tui::widgets::{List, ListItem, Paragraph};
 use tui::Frame;
 use tui_utils::component::Component;
 use tui_utils::keys::key_match;
+use tui_utils::state::{Boundary, BoundedState, StateWrap};
 
 use super::notification::FlashMsg;
 use super::utils::Dim;
@@ -112,7 +113,7 @@ impl From<&TodoListComponent> for TodoListSerde {
 }
 
 pub struct TodoListComponent {
-    pub state: ListState,
+    pub state: BoundedState,
     pub todos: Vec<Todo>,
     keys: SharedKeyList,
     hintbars: HintBars,
@@ -143,17 +144,19 @@ impl HintBars {
 impl TodoListComponent {
     pub fn load(keys: SharedKeyList, flash_tx: Sender<FlashMsg>) -> Self {
         let todo_data: TodoListSerde = confy::load("tood", Some("todos")).unwrap();
-        let mut todo_list = Self {
-            state: ListState::default(),
+
+        let b = Boundary::from(&todo_data.todos);
+        let mut state = BoundedState::new(b, StateWrap::Enable);
+        state.first();
+
+        Self {
+            state,
             todos: todo_data.todos,
             keys: keys.clone(),
             hintbars: HintBars::new(keys),
             move_mode: false,
             flash_tx,
-        };
-
-        todo_list.correct_selection();
-        todo_list
+        }
     }
 
     pub fn todos_ref(&self) -> &[Todo] {
@@ -162,7 +165,7 @@ impl TodoListComponent {
 
     pub fn add_todo(&mut self, t: Todo) -> Result<()> {
         self.todos.push(t);
-        self.state.select(Some(self.todos.len() - 1));
+        self.state.update_upper_and_select(self.todos.len() - 1);
         self.save_to_disk()?;
         Ok(())
     }
@@ -179,48 +182,17 @@ impl TodoListComponent {
     }
 
     pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.todos.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
+        self.state.next()
     }
 
     pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.todos.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn correct_selection(&mut self) {
-        if self.state.selected().is_none() && !self.todos.is_empty() {
-            self.state.select(Some(0));
-        } else if self.todos.is_empty() {
-            self.state.select(None);
-        } else {
-            let new_selection = self.state.selected().unwrap().saturating_sub(1);
-            self.state.select(Some(new_selection));
-        }
+        self.state.prev()
     }
 
     pub fn remove_current(&mut self) -> Result<()> {
-        if let Some(selected) = self.state.selected() {
+        if let Some(selected) = self.state.inner().selected() {
             self.todos.remove(selected);
-            self.correct_selection();
+            self.state.update_boundary_from_vec(&self.todos);
             self.save_to_disk().unwrap();
             self.flash_tx.send(FlashMsg::info("Removed todo"))?;
             return Ok(());
@@ -236,14 +208,14 @@ impl TodoListComponent {
     }
 
     pub fn selected(&self) -> Option<(&Todo, usize)> {
-        if let Some(s) = self.state.selected() {
+        if let Some(s) = self.state.inner().selected() {
             return Some((&self.todos[s], s));
         }
         None
     }
 
     pub fn toggle_finished(&mut self) {
-        if let Some(s) = self.state.selected() {
+        if let Some(s) = self.state.inner().selected() {
             // dont toggle if the todo is recurring
             if self.todos[s].metadata.recurring {
                 self.flash_tx
@@ -265,25 +237,25 @@ impl TodoListComponent {
     }
 
     pub fn move_todo_up(&mut self) {
-        if let Some(s) = self.state.selected() {
+        if let Some(s) = self.state.inner().selected() {
             let new_index = if s == 0 { self.todos.len() - 1 } else { s - 1 };
             self.todos.swap(s, new_index);
-            self.state.select(Some(new_index));
+            self.state.select(new_index).unwrap();
             self.save_to_disk().unwrap();
         }
     }
     pub fn move_todo_down(&mut self) {
-        if let Some(s) = self.state.selected() {
+        if let Some(s) = self.state.inner().selected() {
             let new_index = if s == self.todos.len() - 1 { 0 } else { s + 1 };
             self.todos.swap(s, new_index);
-            self.state.select(Some(new_index));
+            self.state.select(new_index).unwrap();
             self.save_to_disk().unwrap();
         }
     }
 
     #[inline(always)]
     pub fn select(&mut self, selection: usize) {
-        self.state.select(Some(selection));
+        self.state.select(selection).unwrap();
     }
 
     pub fn load_hintbar(&mut self, bar_type: BarType) {
@@ -359,7 +331,7 @@ impl Component for TodoListComponent {
             )
             .highlight_style(highlight_style)
             .highlight_symbol(HIGHLIGHT_SYMBOL);
-        f.render_stateful_widget(items, chunks[0], &mut self.state);
+        f.render_stateful_widget(items, chunks[0], &mut self.state.inner_mut());
 
         let data_chunks = Layout::default()
             .direction(tui::layout::Direction::Horizontal)
