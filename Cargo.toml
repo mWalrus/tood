@@ -17,6 +17,7 @@ tui-input = "0.5.1"
 kanal = { version = "0.1.0-pre6" }
 anyhow = "1.0.65"
 dhat = { version = "0.3", optional = true }
+tui-utils = { git = "https://github.com/mWalrus/tui-utils" }
 
 [dependencies.confy]
 version = "0.5"
