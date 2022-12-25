@@ -11,9 +11,9 @@ use tui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph};
 use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
+use tui_utils::keys::key_match;
 
 use crate::app::{AppMessage, State};
-use crate::keys::key_match;
 use crate::keys::keymap::SharedKeyList;
 
 use super::todo_list::Todo;

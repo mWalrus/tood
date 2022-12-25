@@ -1,30 +1,33 @@
+use std::rc::Rc;
+
 use confy::ConfyError;
 use serde::{Deserialize, Serialize};
+use tui_utils::keys::Keybind;
 
-use super::keymap::{ToodKeyEvent, ToodKeyList};
+use super::keymap::ToodKeyList;
 
 #[derive(Deserialize, Serialize, Default, Debug)]
 pub struct KeyConfig {
-    pub move_up: Option<ToodKeyEvent>,
-    pub move_down: Option<ToodKeyEvent>,
-    pub move_left: Option<ToodKeyEvent>,
-    pub move_right: Option<ToodKeyEvent>,
-    pub alt_move_up: Option<ToodKeyEvent>,
-    pub alt_move_down: Option<ToodKeyEvent>,
-    pub alt_move_left: Option<ToodKeyEvent>,
-    pub alt_move_right: Option<ToodKeyEvent>,
-    pub toggle_completed: Option<ToodKeyEvent>,
-    pub add_todo: Option<ToodKeyEvent>,
-    pub external_editor: Option<ToodKeyEvent>,
-    pub edit_todo: Option<ToodKeyEvent>,
-    pub open_calendar: Option<ToodKeyEvent>,
-    pub remove_todo: Option<ToodKeyEvent>,
-    pub mark_recurring: Option<ToodKeyEvent>,
-    pub submit: Option<ToodKeyEvent>,
-    pub find_mode: Option<ToodKeyEvent>,
-    pub move_mode: Option<ToodKeyEvent>,
-    pub back: Option<ToodKeyEvent>,
-    pub quit: Option<ToodKeyEvent>,
+    pub move_up: Option<Keybind>,
+    pub move_down: Option<Keybind>,
+    pub move_left: Option<Keybind>,
+    pub move_right: Option<Keybind>,
+    pub alt_move_up: Option<Keybind>,
+    pub alt_move_down: Option<Keybind>,
+    pub alt_move_left: Option<Keybind>,
+    pub alt_move_right: Option<Keybind>,
+    pub toggle_completed: Option<Keybind>,
+    pub add_todo: Option<Keybind>,
+    pub external_editor: Option<Keybind>,
+    pub edit_todo: Option<Keybind>,
+    pub open_calendar: Option<Keybind>,
+    pub remove_todo: Option<Keybind>,
+    pub mark_recurring: Option<Keybind>,
+    pub submit: Option<Keybind>,
+    pub find_mode: Option<Keybind>,
+    pub move_mode: Option<Keybind>,
+    pub back: Option<Keybind>,
+    pub quit: Option<Keybind>,
 }
 
 impl KeyConfig {
@@ -33,10 +36,10 @@ impl KeyConfig {
     }
 
     #[allow(clippy::wrong_self_convention)]
-    pub fn to_list(self) -> ToodKeyList {
+    pub fn to_shared_list(self) -> Rc<ToodKeyList> {
         let dkl = ToodKeyList::default();
 
-        ToodKeyList {
+        let list = ToodKeyList {
             move_up: self.move_up.unwrap_or(dkl.move_up),
             move_down: self.move_down.unwrap_or(dkl.move_down),
             move_left: self.move_left.unwrap_or(dkl.move_left),
@@ -57,6 +60,7 @@ impl KeyConfig {
             move_mode: self.move_mode.unwrap_or(dkl.move_mode),
             back: self.back.unwrap_or(dkl.back),
             quit: self.quit.unwrap_or(dkl.quit),
-        }
+        };
+        Rc::new(list)
     }
 }

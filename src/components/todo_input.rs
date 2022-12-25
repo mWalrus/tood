@@ -11,10 +11,11 @@ use tui::{
 };
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
+use tui_utils::keys::key_match;
 
 use crate::{
     app::{AppMessage, State},
-    keys::{key_match, keymap::SharedKeyList},
+    keys::keymap::SharedKeyList,
 };
 
 use super::{

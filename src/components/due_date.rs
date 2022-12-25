@@ -9,10 +9,11 @@ use tui::{
     widgets::Clear,
     Frame,
 };
+use tui_utils::keys::key_match;
 
 use crate::{
     app::{AppMessage, State},
-    keys::{key_match, keymap::SharedKeyList},
+    keys::keymap::SharedKeyList,
     widgets::{
         calendar::{Calendar, CalendarState},
         time_picker::{TimePicker, TimePickerState},

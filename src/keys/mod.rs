@@ -1,4 +1,4 @@
 pub mod key_config;
 pub mod keymap;
 
-pub use keymap::{key_match, ToodKeyList};
+pub use keymap::ToodKeyList;

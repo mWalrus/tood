@@ -11,12 +11,12 @@ use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{List, ListItem, ListState, Paragraph};
 use tui::Frame;
+use tui_utils::keys::key_match;
 
 use super::notification::FlashMsg;
 use super::utils::Dim;
 use super::{utils, Component, HIGHLIGHT_SYMBOL};
 use crate::app::{AppMessage, State};
-use crate::keys::key_match;
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::{BarType, HintBar};
 
