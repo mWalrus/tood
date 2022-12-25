@@ -12,7 +12,7 @@ use tui::{
 };
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
-use tui_utils::{component::Component, keys::key_match};
+use tui_utils::{component::Component, keys::key_match, rect::centered_rect};
 
 use crate::{
     app::{AppMessage, AppState},
@@ -94,7 +94,7 @@ impl TodoInputComponent {
 impl Component for TodoInputComponent {
     type Message = AppMessage;
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _dim: bool) {
-        let rect = utils::centered_rect(f.size());
+        let rect = centered_rect(f.size());
 
         let chunks = Layout::default()
             .direction(tui::layout::Direction::Vertical)

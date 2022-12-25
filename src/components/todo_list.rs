@@ -15,10 +15,12 @@ use tui::Frame;
 use tui_utils::component::Component;
 use tui_utils::keys::key_match;
 use tui_utils::state::{Boundary, BoundedState, StateWrap};
+use tui_utils::style::highlight_style;
+use tui_utils::LIST_HIGHLIGHT_SYMBOL;
 
 use super::notification::FlashMsg;
+use super::utils;
 use super::utils::Dim;
-use super::{utils, HIGHLIGHT_SYMBOL};
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::{BarType, HintBar};
@@ -318,9 +320,7 @@ impl Component for TodoListComponent {
                 .fg(Color::Black)
                 .add_modifier(Modifier::BOLD)
         } else {
-            Style::default()
-                .bg(Color::Indexed(8))
-                .add_modifier(Modifier::BOLD)
+            highlight_style()
         };
 
         let items = List::new(list_items)
@@ -330,7 +330,7 @@ impl Component for TodoListComponent {
                     .dim(dim),
             )
             .highlight_style(highlight_style)
-            .highlight_symbol(HIGHLIGHT_SYMBOL);
+            .highlight_symbol(LIST_HIGHLIGHT_SYMBOL);
         f.render_stateful_widget(items, chunks[0], &mut self.state.inner_mut());
 
         let data_chunks = Layout::default()

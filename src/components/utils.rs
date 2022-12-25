@@ -3,20 +3,7 @@ use tui::{
     style::{Color, Modifier, Style},
     widgets::{Block, Borders},
 };
-
-pub fn centered_rect(size: Rect) -> Rect {
-    let width = size.width / 2;
-    let x = width / 2;
-    let height = size.height / 2;
-    let y = height / 2;
-
-    Rect {
-        x,
-        y,
-        width,
-        height,
-    }
-}
+use tui_utils::rect::centered_rect;
 
 pub fn calendar_rect(size: Rect) -> Rect {
     let max_width = 30; // 4 * 7 + 2 (7 columns with 4 width + 2 size to account for borders)

@@ -5,6 +5,7 @@ use tui::{
     style::{Color, Modifier, Style},
     widgets::{Block, StatefulWidget, Widget},
 };
+use tui_utils::style::highlight_style;
 
 use super::{month::MONTH_COUNT, CalendarState, Month};
 use crate::components::utils;
@@ -149,9 +150,7 @@ impl StatefulWidget for Calendar {
             };
 
             let cell_style = if d == state.selected_day {
-                Style::default()
-                    .bg(Color::Indexed(8))
-                    .add_modifier(Modifier::BOLD)
+                highlight_style()
             } else {
                 Style::default()
             };

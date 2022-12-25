@@ -2,9 +2,10 @@ use chrono::{Local, Timelike};
 use tui::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     widgets::{Block, StatefulWidget, Widget},
 };
+use tui_utils::style::highlight_style;
 
 use crate::components::utils;
 
@@ -111,10 +112,7 @@ impl Default for TimePicker {
     fn default() -> Self {
         Self {
             style: Style::default(),
-            selected_style: Style::default()
-                .bg(Color::Indexed(8))
-                .add_modifier(Modifier::BOLD)
-                .add_modifier(Modifier::UNDERLINED),
+            selected_style: highlight_style().add_modifier(Modifier::UNDERLINED),
             block: utils::default_block("Time picker"),
         }
     }
