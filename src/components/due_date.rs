@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use anyhow::Result;
 use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use crossterm::event::KeyEvent;
@@ -9,10 +11,10 @@ use tui::{
     widgets::Clear,
     Frame,
 };
-use tui_utils::keys::key_match;
+use tui_utils::{component::Component, keys::key_match};
 
 use crate::{
-    app::{AppMessage, State},
+    app::{AppMessage, AppState},
     keys::keymap::SharedKeyList,
     widgets::{
         calendar::{Calendar, CalendarState},
@@ -20,7 +22,7 @@ use crate::{
     },
 };
 
-use super::{notification::FlashMsg, utils, Component};
+use super::{notification::FlashMsg, utils};
 
 pub struct DueDateComponent {
     pub calendar: Calendar,
@@ -29,7 +31,7 @@ pub struct DueDateComponent {
     pub time_picker_state: TimePickerState,
     focused_widget: DueDateWidgetHasFocus,
     keys: SharedKeyList,
-    message_tx: Sender<AppMessage>,
+    flash_tx: Sender<FlashMsg>,
 }
 
 enum DueDateWidgetHasFocus {
@@ -38,7 +40,7 @@ enum DueDateWidgetHasFocus {
 }
 
 impl DueDateComponent {
-    pub fn new(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
+    pub fn new(keys: SharedKeyList, flash_tx: Sender<FlashMsg>) -> Self {
         let calendar = Calendar::default();
 
         let (day, num_days) = if let Some(month) = calendar.current_month() {
@@ -54,7 +56,7 @@ impl DueDateComponent {
             time_picker_state: TimePickerState::with_current_time(),
             focused_widget: DueDateWidgetHasFocus::Cal,
             keys,
-            message_tx,
+            flash_tx,
         }
     }
 
@@ -75,7 +77,7 @@ impl DueDateComponent {
         if let Some(current_month) = self.calendar.current_month() {
             let today = current_month.default_day();
             if let Err(e) = self.calendar_state.set_date(today as usize) {
-                self.message_tx.send(AppMessage::Flash(FlashMsg::err(e)))?;
+                self.flash_tx.send(FlashMsg::err(e))?;
             }
             self.time_picker_state = TimePickerState::with_current_time();
         }
@@ -97,7 +99,7 @@ impl DueDateComponent {
             self.time_picker_state = TimePickerState::with_hm(hour, minute);
             match CalendarState::with_date(i, day as usize, num_days) {
                 Ok(state) => self.calendar_state = state,
-                Err(e) => self.message_tx.send(AppMessage::Flash(FlashMsg::err(e)))?,
+                Err(e) => self.flash_tx.send(FlashMsg::err(e))?,
             }
         }
         Ok(())
@@ -105,6 +107,8 @@ impl DueDateComponent {
 }
 
 impl Component for DueDateComponent {
+    type Message = AppMessage;
+
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _dim: bool) {
         let calendar_rect = utils::calendar_rect(f.size());
         let picker_rect = Rect {
@@ -145,7 +149,7 @@ impl Component for DueDateComponent {
         )
     }
 
-    fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
+    fn handle_input(&mut self, key: KeyEvent) -> Result<Self::Message, Box<dyn Error>> {
         match self.focused_widget {
             DueDateWidgetHasFocus::Cal => {
                 if key_match(&key, &self.keys.move_up) {
@@ -196,13 +200,12 @@ impl Component for DueDateComponent {
             // set to AddTodo since it just changes the state
             // while EditTodo copies the currently selected todo's
             // contents into the edit view fields
-            self.message_tx
-                .send(AppMessage::InputState(State::AddTodo))?;
+            return Ok(AppMessage::InputState(AppState::AddTodo));
         } else if key_match(&key, &self.keys.submit) {
             let date_time = self.get_date_time();
             self.reset_date_time()?;
-            self.message_tx.send(AppMessage::SetDueDate(date_time))?;
+            return Ok(AppMessage::SetDueDate(date_time));
         }
-        Ok(())
+        Ok(AppMessage::NoAction)
     }
 }

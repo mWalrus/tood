@@ -1,7 +1,8 @@
+use std::error::Error;
+
 use anyhow::Result;
 use chrono::{Local, NaiveDateTime};
 use crossterm::event::{Event, KeyEvent};
-use kanal::Sender;
 use tui::{
     backend::Backend,
     layout::{Constraint, Layout},
@@ -11,16 +12,16 @@ use tui::{
 };
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
-use tui_utils::keys::key_match;
+use tui_utils::{component::Component, keys::key_match};
 
 use crate::{
-    app::{AppMessage, State},
+    app::{AppMessage, AppState},
     keys::keymap::SharedKeyList,
 };
 
 use super::{
     todo_list::{ListAction, Todo, TodoMetadata},
-    utils, Component,
+    utils,
 };
 
 #[derive(Clone)]
@@ -32,7 +33,6 @@ pub struct TodoInputComponent {
     pub is_editing_existing: bool,
     todo_index: usize,
     keys: SharedKeyList,
-    message_tx: Sender<AppMessage>,
 }
 
 impl From<TodoInputComponent> for Todo {
@@ -55,7 +55,7 @@ impl From<TodoInputComponent> for Todo {
 }
 
 impl TodoInputComponent {
-    pub fn new(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
+    pub fn new(keys: SharedKeyList) -> Self {
         Self {
             name: Input::default(),
             description: String::default(),
@@ -64,7 +64,6 @@ impl TodoInputComponent {
             is_editing_existing: false,
             todo_index: 0,
             keys,
-            message_tx,
         }
     }
 
@@ -93,6 +92,7 @@ impl TodoInputComponent {
 }
 
 impl Component for TodoInputComponent {
+    type Message = AppMessage;
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _dim: bool) {
         let rect = utils::centered_rect(f.size());
 
@@ -129,35 +129,31 @@ impl Component for TodoInputComponent {
         );
     }
 
-    fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
+    fn handle_input(&mut self, key: KeyEvent) -> Result<Self::Message, Box<dyn Error>> {
         if key_match(&key, &self.keys.back) {
             // abort current edit
             self.clear();
-            self.message_tx
-                .send(AppMessage::InputState(State::Normal))?;
+            return Ok(AppMessage::InputState(AppState::Normal));
         } else if key_match(&key, &self.keys.submit) {
             if self.is_editing_existing {
-                self.message_tx
-                    .send(AppMessage::UpdateList(ListAction::Replace(
-                        self.clone().into(),
-                        self.todo_index,
-                    )))?;
+                return Ok(AppMessage::UpdateList(ListAction::Replace(
+                    self.clone().into(),
+                    self.todo_index,
+                )));
             } else {
-                self.message_tx
-                    .send(AppMessage::UpdateList(ListAction::Add(self.clone().into())))?;
+                return Ok(AppMessage::UpdateList(ListAction::Add(self.clone().into())));
             }
         } else if key_match(&key, &self.keys.external_editor) {
             let desc = edit::edit(&self.description)?;
             self.description = desc;
-            self.message_tx.send(AppMessage::RestoreTerminal)?;
+            return Ok(AppMessage::ReInitTerminal);
         } else if key_match(&key, &self.keys.mark_recurring) {
             self.metadata.recurring = !self.metadata.recurring;
         } else if key_match(&key, &self.keys.open_calendar) {
-            self.message_tx
-                .send(AppMessage::InputState(State::DueDate))?;
+            return Ok(AppMessage::InputState(AppState::DueDate));
         } else {
             input_backend::to_input_request(Event::Key(key)).and_then(|r| self.name.handle(r));
         }
-        Ok(())
+        Ok(AppMessage::NoAction)
     }
 }

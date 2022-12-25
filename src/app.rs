@@ -4,15 +4,11 @@ use super::components::{notification::FlashMsg, NotificationComponent};
 use crate::components::due_date::DueDateComponent;
 use crate::components::skimmer::SkimmerAction;
 use crate::components::todo_list::ListAction;
-use crate::components::Component;
 use crate::components::TodoInputComponent;
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::BarType;
-use crate::EVENT_TIMEOUT;
 use anyhow::Result;
 use chrono::NaiveDateTime;
-use crossterm::event;
-use crossterm::event::Event;
 use kanal::unbounded;
 use kanal::Receiver;
 
@@ -23,28 +19,24 @@ pub struct App {
     pub notification: NotificationComponent,
     pub due_date: DueDateComponent,
     pub keys: SharedKeyList,
-    pub state: State,
-    receiver: Receiver<AppMessage>,
+    pub state: AppState,
+    flash_rx: Receiver<FlashMsg>,
 }
 
+#[derive(Default)]
 pub enum AppMessage {
-    InputState(State),
+    InputState(AppState),
     Skimmer(SkimmerAction),
     UpdateList(ListAction),
-    Flash(FlashMsg),
     SetDueDate(NaiveDateTime),
-    RestoreTerminal,
+    ReInitTerminal,
+    #[default]
+    NoAction,
     Quit,
 }
 
-pub enum PollOutcome {
-    NoAction,
-    ReInitTerminal,
-    Break,
-}
-
 #[derive(Eq, PartialEq)]
-pub enum State {
+pub enum AppState {
     Normal,
     AddTodo,
     EditTodo,
@@ -55,127 +47,98 @@ pub enum State {
 
 impl App {
     pub fn new(keys: SharedKeyList) -> App {
-        let (sender, receiver) = unbounded::<AppMessage>();
+        let (sender, receiver) = unbounded::<FlashMsg>();
         App {
             todo_list: TodoListComponent::load(keys.clone(), sender.clone()),
-            todo_input: TodoInputComponent::new(keys.clone(), sender.clone()),
-            skimmer: SkimmerComponent::new(keys.clone(), sender.clone()),
+            todo_input: TodoInputComponent::new(keys.clone()),
+            skimmer: SkimmerComponent::new(keys.clone()),
             notification: NotificationComponent::new(),
             due_date: DueDateComponent::new(keys.clone(), sender),
             keys,
-            state: State::Normal,
-            receiver,
+            state: AppState::Normal,
+            flash_rx: receiver,
         }
     }
 
-    fn poll() -> Result<Option<Event>> {
-        if event::poll(EVENT_TIMEOUT)? {
-            Ok(Some(event::read()?))
-        } else {
-            Ok(None)
+    pub fn poll_flash_messages(&mut self) {
+        if let Ok(Some(msg)) = self.flash_rx.try_recv() {
+            self.notification.flash(msg);
         }
     }
 
-    pub fn poll_event(&mut self) -> Result<()> {
-        if let Some(Event::Key(ev)) = Self::poll()? {
-            match self.state {
-                State::Normal | State::Move => {
-                    self.todo_list.handle_input(ev)?;
+    pub fn update_state(&mut self, state: AppState) -> Result<()> {
+        match state {
+            AppState::Find => {
+                self.todo_list.load_hintbar(BarType::Find);
+                let todos = self.todo_list.todos_ref();
+                self.skimmer.skim(todos);
+            }
+            AppState::EditTodo => {
+                self.todo_list.load_hintbar(BarType::Edit);
+                if let Some((t, i)) = self.todo_list.selected() {
+                    self.todo_input.populate_with(t, i);
                 }
-                State::AddTodo => {
-                    self.todo_input.handle_input(ev)?;
-                }
-                State::EditTodo => {
-                    self.todo_input.handle_input(ev)?;
-                }
-                State::Find => {
-                    self.skimmer.handle_input(ev)?;
-                }
-                State::DueDate => {
-                    self.due_date.handle_input(ev)?;
+            }
+            AppState::AddTodo => {
+                self.todo_list.load_hintbar(BarType::Edit);
+            }
+            AppState::Normal => {
+                self.todo_list.load_hintbar(BarType::Normal);
+            }
+            AppState::Move => {
+                self.todo_list.load_hintbar(BarType::Move);
+            }
+            AppState::DueDate => {
+                self.todo_list.load_hintbar(BarType::DueDate);
+                if self.state == AppState::EditTodo {
+                    if let Some(dt) = self.todo_input.get_due_date() {
+                        self.due_date.set_date_time(dt)?;
+                    }
                 }
             }
         }
+        self.state = state;
         Ok(())
     }
 
-    pub fn poll_message(&mut self) -> Result<PollOutcome> {
-        if let Ok(Some(message)) = self.receiver.try_recv() {
-            match message {
-                AppMessage::InputState(state) => {
-                    match state {
-                        State::Find => {
-                            self.todo_list.load_hintbar(BarType::Find);
-                            let todos = self.todo_list.todos_ref();
-                            self.skimmer.skim(todos);
-                        }
-                        State::EditTodo => {
-                            self.todo_list.load_hintbar(BarType::Edit);
-                            if let Some((t, i)) = self.todo_list.selected() {
-                                self.todo_input.populate_with(t, i);
-                            }
-                        }
-                        State::AddTodo => {
-                            self.todo_list.load_hintbar(BarType::Edit);
-                        }
-                        State::Normal => {
-                            self.todo_list.load_hintbar(BarType::Normal);
-                        }
-                        State::Move => {
-                            self.todo_list.load_hintbar(BarType::Move);
-                        }
-                        State::DueDate => {
-                            self.todo_list.load_hintbar(BarType::DueDate);
-                            if self.state == State::EditTodo {
-                                if let Some(dt) = self.todo_input.get_due_date() {
-                                    self.due_date.set_date_time(dt)?;
-                                }
-                            }
-                        }
-                    }
-                    self.state = state;
-                }
-                AppMessage::Skimmer(skim_action) => match skim_action {
-                    SkimmerAction::ReportSelection(s) => {
-                        self.todo_list.select(s);
-                        self.todo_list.load_hintbar(BarType::Normal);
+    pub fn perform_skimmer_action(&mut self, skimmer_action: SkimmerAction) {
+        match skimmer_action {
+            SkimmerAction::ReportSelection(s) => {
+                self.todo_list.select(s);
+                self.todo_list.load_hintbar(BarType::Normal);
 
-                        self.state = State::Normal;
-                        self.notification
-                            .flash(FlashMsg::info("Entered normal mode"));
-                    }
-                    SkimmerAction::Skim => {
-                        let todos = self.todo_list.todos_ref();
-                        self.skimmer.skim(todos);
-                    }
-                },
-                AppMessage::UpdateList(list_action) => {
-                    let msg = match list_action {
-                        ListAction::Add(t) => {
-                            self.todo_list.add_todo(t)?;
-                            "Added todo"
-                        }
-                        ListAction::Replace(t, i) => {
-                            self.todo_list.replace(t, i)?;
-                            "Edited todo"
-                        }
-                    };
-
-                    self.notification.flash(FlashMsg::info(msg));
-                    self.todo_list.load_hintbar(BarType::Normal);
-                    self.todo_input.clear();
-                    self.state = State::Normal;
-                }
-                AppMessage::SetDueDate(d) => {
-                    self.todo_input.set_due_date(d);
-                    self.state = State::AddTodo;
-                }
-                AppMessage::Flash(flash_message) => self.notification.flash(flash_message),
-                AppMessage::RestoreTerminal => return Ok(PollOutcome::ReInitTerminal),
-                AppMessage::Quit => return Ok(PollOutcome::Break),
+                self.state = AppState::Normal;
+                self.notification
+                    .flash(FlashMsg::info("Entered normal mode"));
+            }
+            SkimmerAction::Skim => {
+                let todos = self.todo_list.todos_ref();
+                self.skimmer.skim(todos);
             }
         }
+    }
 
-        Ok(PollOutcome::NoAction)
+    pub fn todo_list_action(&mut self, list_action: ListAction) -> Result<()> {
+        let msg = match list_action {
+            ListAction::Add(t) => {
+                self.todo_list.add_todo(t)?;
+                "Added todo"
+            }
+            ListAction::Replace(t, i) => {
+                self.todo_list.replace(t, i)?;
+                "Edited todo"
+            }
+        };
+
+        self.notification.flash(FlashMsg::info(msg));
+        self.todo_list.load_hintbar(BarType::Normal);
+        self.todo_input.clear();
+        self.state = AppState::Normal;
+        Ok(())
+    }
+
+    pub fn set_due_date(&mut self, d: NaiveDateTime) {
+        self.todo_input.set_due_date(d);
+        self.state = AppState::AddTodo;
     }
 }
