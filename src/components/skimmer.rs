@@ -14,13 +14,15 @@ use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 use tui_utils::component::Component;
 use tui_utils::keys::key_match;
+use tui_utils::rect::centered_rect;
 use tui_utils::state::BoundedState;
+use tui_utils::LIST_HIGHLIGHT_SYMBOL;
 
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 
 use super::todo_list::Todo;
-use super::{utils, HIGHLIGHT_SYMBOL};
+use super::utils;
 
 pub enum SkimmerAction {
     Skim,
@@ -113,7 +115,7 @@ impl Component for SkimmerComponent {
     type Message = AppMessage;
 
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _dim: bool) {
-        let rect = utils::centered_rect(f.size());
+        let rect = centered_rect(f.size());
 
         let chunks = Layout::default()
             .direction(tui::layout::Direction::Vertical)
@@ -158,12 +160,8 @@ impl Component for SkimmerComponent {
 
         let items = List::new(list_items)
             .block(utils::default_block("Todos"))
-            .highlight_style(
-                Style::default()
-                    .bg(Color::Indexed(8))
-                    .add_modifier(Modifier::BOLD),
-            )
-            .highlight_symbol(HIGHLIGHT_SYMBOL);
+            .highlight_style(tui_utils::style::highlight_style())
+            .highlight_symbol(LIST_HIGHLIGHT_SYMBOL);
         f.render_widget(Clear, chunks[0]);
         f.render_widget(Clear, chunks[1]);
 
