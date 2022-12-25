@@ -331,7 +331,7 @@ impl Component for TodoListComponent {
             )
             .highlight_style(highlight_style)
             .highlight_symbol(LIST_HIGHLIGHT_SYMBOL);
-        f.render_stateful_widget(items, chunks[0], &mut self.state.inner_mut());
+        f.render_stateful_widget(items, chunks[0], self.state.inner_mut());
 
         let data_chunks = Layout::default()
             .direction(tui::layout::Direction::Horizontal)

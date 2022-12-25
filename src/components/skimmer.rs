@@ -2,7 +2,6 @@ use std::error::Error;
 
 use anyhow::Result;
 use crossterm::event::{Event, KeyEvent};
-use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
@@ -72,7 +71,7 @@ impl SkimmerComponent {
 
     pub fn skim(&mut self, todos: &[Todo]) {
         self.matches.clear();
-        let matcher = Box::new(SkimMatcherV2::default());
+        let matcher = Box::<fuzzy_matcher::skim::SkimMatcherV2>::default();
         for (i, todo) in todos.iter().enumerate() {
             if let Some((score, indices)) = matcher.fuzzy_indices(&todo.name, self.input.value()) {
                 let m = SkimMatch {
@@ -166,7 +165,7 @@ impl Component for SkimmerComponent {
         f.render_widget(Clear, chunks[1]);
 
         f.render_widget(skimmer_input, chunks[0]);
-        f.render_stateful_widget(items, chunks[1], &mut self.state.inner_mut());
+        f.render_stateful_widget(items, chunks[1], self.state.inner_mut());
         f.set_cursor(
             chunks[0].x + (self.input.cursor() as u16).min(width) + 1,
             chunks[0].y + 1,

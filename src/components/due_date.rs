@@ -76,7 +76,7 @@ impl DueDateComponent {
     pub fn reset_date_time(&mut self) -> Result<()> {
         if let Some(current_month) = self.calendar.current_month() {
             let today = current_month.default_day();
-            if let Err(e) = self.calendar_state.set_date(today as usize) {
+            if let Err(e) = self.calendar_state.set_date(today) {
                 self.flash_tx.send(FlashMsg::err(e))?;
             }
             self.time_picker_state = TimePickerState::with_current_time();
