@@ -11,8 +11,7 @@ use tui::{
 };
 
 use crate::EVENT_TIMEOUT;
-
-use super::Component;
+use tui_utils::component::Component;
 
 pub struct NotificationComponent {
     pub msg: Arc<Mutex<Option<FlashMsg>>>,
@@ -40,6 +39,9 @@ impl NotificationComponent {
 }
 
 impl Component for NotificationComponent {
+    // no need for handling input or sending messages
+    type Message = ();
+
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _dim: bool) {
         if let Ok(m) = self.msg.clone().try_lock() {
             if m.is_none() {

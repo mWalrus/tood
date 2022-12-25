@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::io;
 
 use anyhow::Result;
@@ -11,12 +12,13 @@ use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{List, ListItem, ListState, Paragraph};
 use tui::Frame;
+use tui_utils::component::Component;
 use tui_utils::keys::key_match;
 
 use super::notification::FlashMsg;
 use super::utils::Dim;
-use super::{utils, Component, HIGHLIGHT_SYMBOL};
-use crate::app::{AppMessage, State};
+use super::{utils, HIGHLIGHT_SYMBOL};
+use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::{BarType, HintBar};
 
@@ -115,7 +117,7 @@ pub struct TodoListComponent {
     keys: SharedKeyList,
     hintbars: HintBars,
     move_mode: bool,
-    message_tx: Sender<AppMessage>,
+    flash_tx: Sender<FlashMsg>,
 }
 
 pub struct HintBars {
@@ -139,7 +141,7 @@ impl HintBars {
 }
 
 impl TodoListComponent {
-    pub fn load(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
+    pub fn load(keys: SharedKeyList, flash_tx: Sender<FlashMsg>) -> Self {
         let todo_data: TodoListSerde = confy::load("tood", Some("todos")).unwrap();
         let mut todo_list = Self {
             state: ListState::default(),
@@ -147,7 +149,7 @@ impl TodoListComponent {
             keys: keys.clone(),
             hintbars: HintBars::new(keys),
             move_mode: false,
-            message_tx,
+            flash_tx,
         };
 
         todo_list.correct_selection();
@@ -220,8 +222,7 @@ impl TodoListComponent {
             self.todos.remove(selected);
             self.correct_selection();
             self.save_to_disk().unwrap();
-            self.message_tx
-                .send(AppMessage::Flash(FlashMsg::info("Removed todo")))?;
+            self.flash_tx.send(FlashMsg::info("Removed todo"))?;
             return Ok(());
         }
         self.report_no_selection();
@@ -229,8 +230,8 @@ impl TodoListComponent {
     }
 
     pub fn report_no_selection(&self) {
-        self.message_tx
-            .send(AppMessage::Flash(FlashMsg::err("No todo selected")))
+        self.flash_tx
+            .send(FlashMsg::err("No todo selected"))
             .unwrap();
     }
 
@@ -245,10 +246,8 @@ impl TodoListComponent {
         if let Some(s) = self.state.selected() {
             // dont toggle if the todo is recurring
             if self.todos[s].metadata.recurring {
-                self.message_tx
-                    .send(AppMessage::Flash(FlashMsg::warn(
-                        "Can't mark recurring as finished",
-                    )))
+                self.flash_tx
+                    .send(FlashMsg::warn("Can't mark recurring as finished"))
                     .unwrap();
                 return;
             }
@@ -259,9 +258,7 @@ impl TodoListComponent {
             } else {
                 "Marked todo as unfinished"
             };
-            self.message_tx
-                .send(AppMessage::Flash(FlashMsg::info(msg)))
-                .unwrap();
+            self.flash_tx.send(FlashMsg::info(msg)).unwrap();
         } else {
             self.report_no_selection();
         }
@@ -295,6 +292,7 @@ impl TodoListComponent {
 }
 
 impl Component for TodoListComponent {
+    type Message = AppMessage;
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, dim: bool) {
         let size = f.size();
         let hintbar = &self.hintbars.items[self.hintbars.selected];
@@ -396,9 +394,9 @@ impl Component for TodoListComponent {
         f.render_widget(hintbar, chunks[2]);
     }
 
-    fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
+    fn handle_input(&mut self, key: KeyEvent) -> Result<Self::Message, Box<dyn Error>> {
         if key_match(&key, &self.keys.quit) {
-            self.message_tx.send(AppMessage::Quit)?;
+            return Ok(AppMessage::Quit);
         } else if key_match(&key, &self.keys.move_up) {
             if self.move_mode {
                 self.move_todo_up();
@@ -414,23 +412,20 @@ impl Component for TodoListComponent {
         } else if key_match(&key, &self.keys.toggle_completed) {
             self.toggle_finished();
         } else if key_match(&key, &self.keys.add_todo) {
-            self.message_tx
-                .send(AppMessage::InputState(State::AddTodo))?;
+            return Ok(AppMessage::InputState(AppState::AddTodo));
         } else if key_match(&key, &self.keys.edit_todo) {
-            self.message_tx
-                .send(AppMessage::InputState(State::EditTodo))?;
+            return Ok(AppMessage::InputState(AppState::EditTodo));
         } else if key_match(&key, &self.keys.move_mode) {
             self.move_mode = true;
-            self.message_tx.send(AppMessage::InputState(State::Move))?;
+            return Ok(AppMessage::InputState(AppState::Move));
         } else if key_match(&key, &self.keys.find_mode) {
-            self.message_tx.send(AppMessage::InputState(State::Find))?;
+            return Ok(AppMessage::InputState(AppState::Find));
         } else if key_match(&key, &self.keys.remove_todo) {
             self.remove_current()?;
         } else if key_match(&key, &self.keys.submit) && self.move_mode {
             self.move_mode = false;
-            self.message_tx
-                .send(AppMessage::InputState(State::Normal))?;
+            return Ok(AppMessage::InputState(AppState::Normal));
         }
-        Ok(())
+        Ok(AppMessage::NoAction)
     }
 }

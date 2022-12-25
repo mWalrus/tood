@@ -1,8 +1,9 @@
+use std::error::Error;
+
 use anyhow::Result;
 use crossterm::event::{Event, KeyEvent};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
-use kanal::Sender;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
@@ -11,13 +12,13 @@ use tui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph};
 use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
+use tui_utils::component::Component;
 use tui_utils::keys::key_match;
 
-use crate::app::{AppMessage, State};
+use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 
 use super::todo_list::Todo;
-use super::Component;
 use super::{utils, HIGHLIGHT_SYMBOL};
 
 pub enum SkimmerAction {
@@ -37,7 +38,6 @@ pub struct SkimmerComponent {
     pub input: Input,
     pub matches: Vec<SkimMatch>,
     keys: SharedKeyList,
-    message_tx: Sender<AppMessage>,
 }
 
 impl From<(usize, &Todo)> for SkimMatch {
@@ -52,13 +52,12 @@ impl From<(usize, &Todo)> for SkimMatch {
 }
 
 impl SkimmerComponent {
-    pub fn new(keys: SharedKeyList, message_tx: Sender<AppMessage>) -> Self {
+    pub fn new(keys: SharedKeyList) -> Self {
         Self {
             state: ListState::default(),
             input: Input::default(),
             matches: Vec::new(),
             keys,
-            message_tx,
         }
     }
 
@@ -129,6 +128,8 @@ impl SkimmerComponent {
 }
 
 impl Component for SkimmerComponent {
+    type Message = AppMessage;
+
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _dim: bool) {
         let rect = utils::centered_rect(f.size());
 
@@ -192,27 +193,24 @@ impl Component for SkimmerComponent {
         );
     }
 
-    fn handle_input(&mut self, key: KeyEvent) -> Result<()> {
+    fn handle_input(&mut self, key: KeyEvent) -> Result<AppMessage, Box<dyn Error>> {
         if key_match(&key, &self.keys.back) {
-            self.message_tx
-                .send(AppMessage::InputState(State::Normal))?;
+            return Ok(AppMessage::InputState(AppState::Normal));
         } else if key_match(&key, &self.keys.alt_move_up) {
             self.previous();
         } else if key_match(&key, &self.keys.alt_move_down) {
             self.next();
         } else if key_match(&key, &self.keys.submit) {
             if let Some(s) = self.selected_match() {
-                self.message_tx
-                    .send(AppMessage::Skimmer(SkimmerAction::ReportSelection(
-                        s.position,
-                    )))?;
+                return Ok(AppMessage::Skimmer(SkimmerAction::ReportSelection(
+                    s.position,
+                )));
             }
             self.clear();
         } else {
             input_backend::to_input_request(Event::Key(key)).and_then(|r| self.input.handle(r));
-            self.message_tx
-                .send(AppMessage::Skimmer(SkimmerAction::Skim))?;
+            return Ok(AppMessage::Skimmer(SkimmerAction::Skim));
         }
-        Ok(())
+        Ok(AppMessage::NoAction)
     }
 }
