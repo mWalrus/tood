@@ -149,7 +149,11 @@ impl TodoListComponent {
 
         let b = Boundary::from(&todo_data.todos);
         let mut state = BoundedState::new(b, StateWrap::Enable);
-        state.first();
+
+        // only set a selection if the boundary is not empty
+        if !b.is_empty() {
+            state.first();
+        }
 
         Self {
             state,
