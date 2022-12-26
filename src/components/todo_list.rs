@@ -12,6 +12,7 @@ use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{List, ListItem, Paragraph};
 use tui::Frame;
+use tui_utils::blocks::Dim;
 use tui_utils::component::Component;
 use tui_utils::keys::key_match;
 use tui_utils::state::{Boundary, BoundedState, StateWrap};
@@ -20,7 +21,6 @@ use tui_utils::LIST_HIGHLIGHT_SYMBOL;
 
 use super::notification::FlashMsg;
 use super::utils;
-use super::utils::Dim;
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::{BarType, HintBar};
