@@ -2,6 +2,7 @@ use std::error::Error;
 
 use anyhow::Result;
 use crossterm::event::{Event, KeyEvent};
+use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
@@ -40,6 +41,7 @@ pub struct SkimmerComponent {
     pub input: Input,
     pub matches: Vec<SkimMatch>,
     keys: SharedKeyList,
+    matcher: Box<SkimMatcherV2>,
 }
 
 impl From<(usize, &Todo)> for SkimMatch {
@@ -60,6 +62,7 @@ impl SkimmerComponent {
             input: Input::default(),
             matches: Vec::new(),
             keys,
+            matcher: Box::<SkimMatcherV2>::default(),
         }
     }
 
@@ -71,9 +74,10 @@ impl SkimmerComponent {
 
     pub fn skim(&mut self, todos: &[Todo]) {
         self.matches.clear();
-        let matcher = Box::<fuzzy_matcher::skim::SkimMatcherV2>::default();
         for (i, todo) in todos.iter().enumerate() {
-            if let Some((score, indices)) = matcher.fuzzy_indices(&todo.name, self.input.value()) {
+            if let Some((score, indices)) =
+                self.matcher.fuzzy_indices(&todo.name, self.input.value())
+            {
                 let m = SkimMatch {
                     text: todo.name.clone(),
                     position: i,
