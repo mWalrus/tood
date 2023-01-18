@@ -184,12 +184,15 @@ impl Component for SkimmerComponent {
         } else if key_match(&key, &self.keys.alt_move_down) {
             self.next();
         } else if key_match(&key, &self.keys.submit) {
-            if let Some(s) = self.selected_match() {
-                return Ok(AppMessage::Skimmer(SkimmerAction::ReportSelection(
+            let response = if let Some(s) = self.selected_match() {
+                Ok(AppMessage::Skimmer(SkimmerAction::ReportSelection(
                     s.position,
-                )));
-            }
+                )))
+            } else {
+                Ok(AppMessage::InputState(AppState::Normal))
+            };
             self.clear();
+            return response;
         } else {
             input_backend::to_input_request(Event::Key(key)).and_then(|r| self.input.handle(r));
             return Ok(AppMessage::Skimmer(SkimmerAction::Skim));
