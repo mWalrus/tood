@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::error::Error;
 use std::io;
 
@@ -24,7 +25,7 @@ use super::utils;
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::{BarType, HintBar};
-use crate::widgets::stateful_paragraph;
+use crate::widgets::stateful_paragraph::{ParagraphState, ScrollPos, StatefulParagraph};
 
 static TIME_FORMAT: &str = "%D %-I:%M %P";
 
@@ -116,7 +117,8 @@ impl From<&TodoListComponent> for TodoListSerde {
 }
 
 pub struct TodoListComponent {
-    pub state: BoundedState,
+    pub list_state: BoundedState,
+    paragraph_state: Cell<ParagraphState>,
     pub todos: Vec<Todo>,
     keys: SharedKeyList,
     hintbars: HintBars,
@@ -157,7 +159,8 @@ impl TodoListComponent {
         }
 
         Self {
-            state,
+            list_state: state,
+            paragraph_state: Cell::new(ParagraphState::default()),
             todos: todo_data.todos,
             keys: keys.clone(),
             hintbars: HintBars::new(keys),
@@ -172,7 +175,8 @@ impl TodoListComponent {
 
     pub fn add_todo(&mut self, t: Todo) -> Result<()> {
         self.todos.push(t);
-        self.state.update_upper_and_select(self.todos.len() - 1);
+        self.list_state
+            .update_upper_and_select(self.todos.len() - 1);
         self.save_to_disk()?;
         Ok(())
     }
@@ -189,17 +193,17 @@ impl TodoListComponent {
     }
 
     pub fn next(&mut self) {
-        self.state.next()
+        self.list_state.next()
     }
 
     pub fn previous(&mut self) {
-        self.state.prev()
+        self.list_state.prev()
     }
 
     pub fn remove_current(&mut self) -> Result<()> {
-        if let Some(selected) = self.state.inner().selected() {
+        if let Some(selected) = self.list_state.inner().selected() {
             self.todos.remove(selected);
-            self.state.update_boundary_from_vec(&self.todos);
+            self.list_state.update_boundary_from_vec(&self.todos);
             self.save_to_disk().unwrap();
             self.flash_tx.send(FlashMsg::info("Removed todo"))?;
             return Ok(());
@@ -215,14 +219,31 @@ impl TodoListComponent {
     }
 
     pub fn selected(&self) -> Option<(&Todo, usize)> {
-        if let Some(s) = self.state.inner().selected() {
+        if let Some(s) = self.list_state.inner().selected() {
             return Some((&self.todos[s], s));
         }
         None
     }
 
+    pub fn set_description_scroll(&self, pos: u16) -> bool {
+        let mut state = self.paragraph_state.get();
+
+        let new_scroll_pos = pos.min(
+            state
+                .lines()
+                .saturating_sub(state.height().saturating_sub(2)),
+        );
+
+        state.set_scroll(ScrollPos {
+            x: 0,
+            y: new_scroll_pos,
+        });
+        self.paragraph_state.set(state);
+        true
+    }
+
     pub fn toggle_finished(&mut self) {
-        if let Some(s) = self.state.inner().selected() {
+        if let Some(s) = self.list_state.inner().selected() {
             // dont toggle if the todo is recurring
             if self.todos[s].metadata.recurring {
                 self.flash_tx
@@ -244,25 +265,25 @@ impl TodoListComponent {
     }
 
     pub fn move_todo_up(&mut self) {
-        if let Some(s) = self.state.inner().selected() {
+        if let Some(s) = self.list_state.inner().selected() {
             let new_index = if s == 0 { self.todos.len() - 1 } else { s - 1 };
             self.todos.swap(s, new_index);
-            self.state.select(new_index).unwrap();
+            self.list_state.select(new_index).unwrap();
             self.save_to_disk().unwrap();
         }
     }
     pub fn move_todo_down(&mut self) {
-        if let Some(s) = self.state.inner().selected() {
+        if let Some(s) = self.list_state.inner().selected() {
             let new_index = if s == self.todos.len() - 1 { 0 } else { s + 1 };
             self.todos.swap(s, new_index);
-            self.state.select(new_index).unwrap();
+            self.list_state.select(new_index).unwrap();
             self.save_to_disk().unwrap();
         }
     }
 
     #[inline(always)]
     pub fn select(&mut self, selection: usize) {
-        self.state.select(selection).unwrap();
+        self.list_state.select(selection).unwrap();
     }
 
     pub fn load_hintbar(&mut self, bar_type: BarType) {
@@ -336,7 +357,7 @@ impl Component for TodoListComponent {
             )
             .highlight_style(highlight_style)
             .highlight_symbol(LIST_HIGHLIGHT_SYMBOL);
-        f.render_stateful_widget(items, chunks[0], self.state.inner_mut());
+        f.render_stateful_widget(items, chunks[0], self.list_state.inner_mut());
 
         let data_chunks = Layout::default()
             .direction(tui::layout::Direction::Horizontal)
@@ -344,10 +365,17 @@ impl Component for TodoListComponent {
             .split(chunks[1]);
 
         if let Some((t, _)) = self.selected() {
-            let description = Paragraph::new(&*t.description)
-                .wrap(tui::widgets::Wrap { trim: true })
+            let description = StatefulParagraph::new(&*t.description)
+                .style(Style::default())
                 .block(utils::default_block("Description").dim(dim));
-            f.render_widget(description, data_chunks[0]);
+
+            let mut p_state = self.paragraph_state.get();
+
+            f.render_stateful_widget(description, data_chunks[0], &mut p_state);
+
+            self.paragraph_state.set(p_state);
+
+            self.set_description_scroll(p_state.scroll().y);
 
             let formatted_metadata = t.metadata.to_formatted();
             let mut list_items: Vec<ListItem> = Vec::with_capacity(formatted_metadata.len());
@@ -363,7 +391,7 @@ impl Component for TodoListComponent {
             f.render_widget(metadata_list, data_chunks[1]);
         } else {
             let placeholder1 =
-                Paragraph::new("").block(utils::default_block("Description").dim(dim));
+                Paragraph::new("bruh").block(utils::default_block("Description").dim(dim));
             let placeholder2 = Paragraph::new("").block(utils::default_block("Metadata").dim(dim));
             f.render_widget(placeholder1, data_chunks[0]);
             f.render_widget(placeholder2, data_chunks[1]);
