@@ -24,6 +24,7 @@ use super::utils;
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::{BarType, HintBar};
+use crate::widgets::stateful_paragraph;
 
 static TIME_FORMAT: &str = "%D %-I:%M %P";
 
