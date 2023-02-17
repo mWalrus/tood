@@ -73,6 +73,14 @@ impl HintBar {
                 bind: keys.remove_todo.to_string(),
             },
             Hint {
+                name: "Desc Up",
+                bind: keys.desc_scroll_up.to_string(),
+            },
+            Hint {
+                name: "Desc Down",
+                bind: keys.desc_scroll_down.to_string(),
+            },
+            Hint {
                 name: "Quit",
                 bind: keys.quit.to_string(),
             },
@@ -222,6 +230,7 @@ impl Widget for &HintBar {
                 String::from(hint),
                 Style::default()
                     .bg(Color::Blue)
+                    .fg(Color::Black)
                     .add_modifier(Modifier::BOLD),
             );
             offset_x += hl + 1;
