@@ -113,10 +113,9 @@ impl<'a> StatefulWidget for StatefulParagraph<'a> {
         let mut y = 0;
         let mut end_reached = false;
         while let Some((current_line, current_line_width)) = line_composer.next_line() {
-            if end_reached && y >= state.scroll.y {
+            if !end_reached && y >= state.scroll.y {
                 let mut x = 0;
                 for StyledGrapheme { symbol, style } in current_line {
-                    println!("{symbol}");
                     buf.get_mut(text_area.left() + x, text_area.top() + y - state.scroll.y)
                         .set_symbol(if symbol.is_empty() {
                             // If the symbol is empty, the last char which rendered last time will
