@@ -1,0 +1,59 @@
+use tui::{
+    layout::Rect,
+    style::Style,
+    symbols::{block::FULL, line::VERTICAL},
+    widgets::Widget,
+};
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Scrollbar {
+    max: u16,
+    pos: u16,
+}
+
+impl Scrollbar {
+    pub fn new(max: u16, pos: u16) -> Self {
+        Self { max, pos }
+    }
+}
+
+impl Widget for Scrollbar {
+    fn render(self, area: Rect, buf: &mut tui::buffer::Buffer) {
+        if area.height < 2 {
+            return;
+        }
+
+        if self.max == 0 {
+            return;
+        }
+
+        let right = area.right().saturating_sub(1);
+        if right <= area.left() {
+            return;
+        }
+
+        let (bar_top, bar_height) = {
+            let scrollbar_area = area.inner(&tui::layout::Margin {
+                horizontal: 0,
+                vertical: 1,
+            });
+            (scrollbar_area.top(), scrollbar_area.height)
+        };
+
+        for y in bar_top..(bar_top + bar_height) {
+            buf.set_string(right, y, VERTICAL, Style::default());
+        }
+        let progress = f32::from(self.pos) / f32::from(self.max);
+        let progress = if progress > 1.0 { 1.0 } else { progress };
+        let pos = f32::from(bar_height) * progress;
+
+        let pos = (pos as u16).saturating_sub(1);
+
+        buf.set_string(
+            right,
+            bar_top + pos,
+            FULL,
+            Style::default().fg(tui::style::Color::Blue),
+        )
+    }
+}

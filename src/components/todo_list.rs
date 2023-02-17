@@ -25,6 +25,7 @@ use super::utils;
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::{BarType, HintBar};
+use crate::widgets::scrollbar::Scrollbar;
 use crate::widgets::stateful_paragraph::paragraph::ScrollSelection;
 use crate::widgets::stateful_paragraph::{ParagraphState, ScrollPos, StatefulParagraph};
 
@@ -400,6 +401,14 @@ impl Component for TodoListComponent {
             self.paragraph_state.set(p_state);
 
             self.set_scroll_desc(p_state.scroll().y);
+
+            if p_state.lines() > data_chunks[0].height {
+                let scrollbar = Scrollbar::new(
+                    p_state.height() + (data_chunks[0].height - 2),
+                    p_state.scroll().y,
+                );
+                f.render_widget(scrollbar, data_chunks[0])
+            }
 
             let formatted_metadata = t.metadata.to_formatted();
             let mut list_items: Vec<ListItem> = Vec::with_capacity(formatted_metadata.len());
