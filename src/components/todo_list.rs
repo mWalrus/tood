@@ -25,6 +25,7 @@ use super::utils;
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 use crate::widgets::hint_bar::{BarType, HintBar};
+use crate::widgets::stateful_paragraph::paragraph::ScrollSelection;
 use crate::widgets::stateful_paragraph::{ParagraphState, ScrollPos, StatefulParagraph};
 
 static TIME_FORMAT: &str = "%D %-I:%M %P";
@@ -225,9 +226,32 @@ impl TodoListComponent {
         None
     }
 
-    pub fn set_description_scroll(&self, pos: u16) -> bool {
+    pub fn scroll_desc(&self, nav: ScrollSelection) -> bool {
         let mut state = self.paragraph_state.get();
 
+        let new_scroll_pos = match nav {
+            ScrollSelection::Up => state.scroll().y.saturating_sub(1),
+            ScrollSelection::Down => state.scroll().y.saturating_add(1),
+            ScrollSelection::Top => 0,
+            ScrollSelection::End => state
+                .lines()
+                .saturating_sub(state.height().saturating_sub(2)),
+            ScrollSelection::PageUp => state
+                .scroll()
+                .y
+                .saturating_sub(state.height().saturating_sub(2)),
+            ScrollSelection::PageDown => state
+                .scroll()
+                .y
+                .saturating_add(state.height().saturating_sub(2)),
+            _ => state.scroll().y,
+        };
+
+        self.set_scroll_desc(new_scroll_pos)
+    }
+
+    fn set_scroll_desc(&self, pos: u16) -> bool {
+        let mut state = self.paragraph_state.get();
         let new_scroll_pos = pos.min(
             state
                 .lines()
@@ -375,7 +399,7 @@ impl Component for TodoListComponent {
 
             self.paragraph_state.set(p_state);
 
-            self.set_description_scroll(p_state.scroll().y);
+            self.set_scroll_desc(p_state.scroll().y);
 
             let formatted_metadata = t.metadata.to_formatted();
             let mut list_items: Vec<ListItem> = Vec::with_capacity(formatted_metadata.len());
@@ -391,7 +415,7 @@ impl Component for TodoListComponent {
             f.render_widget(metadata_list, data_chunks[1]);
         } else {
             let placeholder1 =
-                Paragraph::new("bruh").block(utils::default_block("Description").dim(dim));
+                Paragraph::new("").block(utils::default_block("Description").dim(dim));
             let placeholder2 = Paragraph::new("").block(utils::default_block("Metadata").dim(dim));
             f.render_widget(placeholder1, data_chunks[0]);
             f.render_widget(placeholder2, data_chunks[1]);
@@ -430,6 +454,10 @@ impl Component for TodoListComponent {
         } else if key_match(&key, &self.keys.submit) && self.move_mode {
             self.move_mode = false;
             return Ok(AppMessage::InputState(AppState::Normal));
+        } else if key_match(&key, &self.keys.desc_scroll_up) {
+            self.scroll_desc(ScrollSelection::Up);
+        } else if key_match(&key, &self.keys.desc_scroll_down) {
+            self.scroll_desc(ScrollSelection::Down);
         }
         Ok(AppMessage::NoAction)
     }

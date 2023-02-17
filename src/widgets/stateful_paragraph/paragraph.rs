@@ -10,6 +10,15 @@ use unicode_width::UnicodeWidthStr;
 
 use super::text::{LineComposer, WordWrapper};
 
+pub enum ScrollSelection {
+    Up,
+    Down,
+    Top,
+    End,
+    PageUp,
+    PageDown,
+}
+
 pub struct StatefulParagraph<'p> {
     block: Option<Block<'p>>,
     style: Style,
@@ -129,9 +138,11 @@ impl<'a> StatefulWidget for StatefulParagraph<'a> {
                 }
             }
             y += 1;
-            if y >= text_area.height + state.scroll.x {
+            if y >= text_area.height + state.scroll.y {
                 end_reached = true;
             }
         }
+        state.lines = y;
+        state.height = area.height;
     }
 }
