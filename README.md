@@ -46,4 +46,4 @@ Tood has a default theme it loads unless you modify `~/.config/tood/theme.ron` l
   scrollbar: Some(Rgb(161, 38, 255))
 )
 ```
-All modifiable theme options can be found [here](https://github.com/mWalrus/tood/blob/main/src/keys/theme.rs#L11).
+All modifiable theme options can be found [here](https://github.com/mWalrus/tood/blob/main/src/theme/theme.rs#L11).
