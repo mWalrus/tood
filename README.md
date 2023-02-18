@@ -21,6 +21,9 @@ Change movement keys to VIM-like bindings:
   move_down: Some(( code: Char('j'), modifiers: ( bits: 0,),)),
   move_left: Some(( code: Char('h'), modifiers: ( bits: 0,),)),
   move_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
+  // sets scrolling to ctrl+u/ctrl+d
+  desc_scroll_up: Some(( code: Char('u'), modifiers: ( bits: 2),)),
+  desc_scroll_down: Some(( code: Char('d'), modifiers: ( bits: 2),)),
 )
 ```
 All modifiable keybinds can be found [here](https://github.com/mWalrus/tood/blob/main/src/keys/key_config.rs#L7).
