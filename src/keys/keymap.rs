@@ -1,7 +1,8 @@
 use std::rc::Rc;
 
 use crossterm::event::{KeyCode, KeyModifiers};
-use tui_utils::keys::{Keybind, Shared};
+use tui_utils::keys::Keybind;
+use tui_utils::shared::Shared;
 
 use super::key_config::KeyConfig;
 pub type SharedKeyList = Rc<ToodKeyList>;

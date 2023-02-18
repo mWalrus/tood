@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
 use tui::style::Color;
-use tui_utils::keys::Shared;
+use tui_utils::shared::Shared;
 
 use super::theme_config::ThemeConfig;
 
