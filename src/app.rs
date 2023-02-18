@@ -6,6 +6,7 @@ use crate::components::skimmer::SkimmerAction;
 use crate::components::todo_list::ListAction;
 use crate::components::TodoInputComponent;
 use crate::keys::keymap::SharedKeyList;
+use crate::theme::theme::SharedTheme;
 use crate::widgets::hint_bar::BarType;
 use anyhow::Result;
 use chrono::NaiveDateTime;
@@ -19,6 +20,7 @@ pub struct App {
     pub notification: NotificationComponent,
     pub due_date: DueDateComponent,
     pub keys: SharedKeyList,
+    pub theme: SharedTheme,
     pub state: AppState,
     flash_rx: Receiver<FlashMsg>,
 }
@@ -46,15 +48,16 @@ pub enum AppState {
 }
 
 impl App {
-    pub fn new(keys: SharedKeyList) -> App {
+    pub fn new(keys: SharedKeyList, theme: SharedTheme) -> App {
         let (sender, receiver) = unbounded::<FlashMsg>();
         App {
-            todo_list: TodoListComponent::load(keys.clone(), sender.clone()),
-            todo_input: TodoInputComponent::new(keys.clone()),
-            skimmer: SkimmerComponent::new(keys.clone()),
-            notification: NotificationComponent::new(),
-            due_date: DueDateComponent::new(keys.clone(), sender),
+            todo_list: TodoListComponent::load(keys.clone(), theme.clone(), sender.clone()),
+            todo_input: TodoInputComponent::new(keys.clone(), theme.clone()),
+            skimmer: SkimmerComponent::new(keys.clone(), theme.clone()),
+            notification: NotificationComponent::new(theme.clone()),
+            due_date: DueDateComponent::new(keys.clone(), theme.clone(), sender),
             keys,
+            theme,
             state: AppState::Normal,
             flash_rx: receiver,
         }

@@ -11,7 +11,7 @@ use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
-use tui::widgets::{List, ListItem, Paragraph};
+use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use tui::Frame;
 use tui_utils::blocks::Dim;
 use tui_utils::component::Component;
@@ -24,6 +24,7 @@ use super::notification::FlashMsg;
 use super::utils;
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
+use crate::theme::theme::SharedTheme;
 use crate::widgets::hint_bar::{BarType, HintBar};
 use crate::widgets::scrollbar::Scrollbar;
 use crate::widgets::stateful_paragraph::paragraph::ScrollSelection;
@@ -123,6 +124,7 @@ pub struct TodoListComponent {
     paragraph_state: Cell<ParagraphState>,
     pub todos: Vec<Todo>,
     keys: SharedKeyList,
+    theme: SharedTheme,
     hintbars: HintBars,
     move_mode: bool,
     flash_tx: Sender<FlashMsg>,
@@ -134,22 +136,22 @@ pub struct HintBars {
 }
 
 impl HintBars {
-    fn new(keys: SharedKeyList) -> Self {
+    fn new(keys: SharedKeyList, theme: SharedTheme) -> Self {
         Self {
             selected: 0,
             items: [
-                HintBar::normal_mode(keys.clone()),
-                HintBar::edit_mode(keys.clone()),
-                HintBar::move_mode(keys.clone()),
-                HintBar::find_mode(keys.clone()),
-                HintBar::due_date_mode(keys),
+                HintBar::normal_mode(keys.clone(), theme.clone()),
+                HintBar::edit_mode(keys.clone(), theme.clone()),
+                HintBar::move_mode(keys.clone(), theme.clone()),
+                HintBar::find_mode(keys.clone(), theme.clone()),
+                HintBar::due_date_mode(keys, theme),
             ],
         }
     }
 }
 
 impl TodoListComponent {
-    pub fn load(keys: SharedKeyList, flash_tx: Sender<FlashMsg>) -> Self {
+    pub fn load(keys: SharedKeyList, theme: SharedTheme, flash_tx: Sender<FlashMsg>) -> Self {
         let todo_data: TodoListSerde = confy::load("tood", Some("todos")).unwrap();
 
         let b = Boundary::from(&todo_data.todos);
@@ -165,7 +167,8 @@ impl TodoListComponent {
             paragraph_state: Cell::new(ParagraphState::default()),
             todos: todo_data.todos,
             keys: keys.clone(),
-            hintbars: HintBars::new(keys),
+            theme: theme.clone(),
+            hintbars: HintBars::new(keys, theme),
             move_mode: false,
             flash_tx,
         }
@@ -338,11 +341,11 @@ impl Component for TodoListComponent {
             .iter()
             .map(|t| {
                 let (finished, mut fg_style) = if t.metadata.recurring {
-                    ("[∞] ", Style::default().fg(Color::Blue))
+                    ("[∞] ", Style::default().fg(self.theme.recurring_todo_title))
                 } else if t.metadata.finished {
-                    ("[x] ", Style::default().fg(Color::Green))
+                    ("[x] ", Style::default().fg(self.theme.completed_todo_title))
                 } else {
-                    ("[ ] ", Style::default())
+                    ("[ ] ", Style::default().fg(self.theme.todo_title))
                 };
 
                 if dim {
@@ -357,30 +360,38 @@ impl Component for TodoListComponent {
 
         let border_style = if self.move_mode {
             Style::default()
-                .fg(Color::Blue)
+                .fg(self.theme.move_mode_border)
                 .add_modifier(Modifier::BOLD)
         } else {
-            Style::default().add_modifier(Modifier::BOLD)
+            Style::default()
+                .fg(self.theme.border)
+                .add_modifier(Modifier::BOLD)
         };
 
         let highlight_style = if dim {
             Style::default()
         } else if self.move_mode {
             Style::default()
-                .bg(Color::Blue)
-                .fg(Color::Black)
+                .bg(self.theme.move_mode_bg)
+                .fg(self.theme.move_mode_fg)
                 .add_modifier(Modifier::BOLD)
         } else {
-            highlight_style()
+            Style::default().bg(self.theme.selected_bg)
         };
 
         let items = List::new(list_items)
             .block(
-                utils::default_block("Todos")
-                    .border_style(border_style)
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(
+                        Style::default()
+                            .fg(self.theme.border)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                    .title("Todos")
                     .dim(dim),
             )
-            .highlight_style(highlight_style)
+            .highlight_style(Style::default().bg(self.theme.selected_bg))
             .highlight_symbol(LIST_HIGHLIGHT_SYMBOL);
         f.render_stateful_widget(items, chunks[0], self.list_state.inner_mut());
 
@@ -392,7 +403,17 @@ impl Component for TodoListComponent {
         if let Some((t, _)) = self.selected() {
             let description = StatefulParagraph::new(&*t.description)
                 .style(Style::default())
-                .block(utils::default_block("Description").dim(dim));
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .border_style(
+                            Style::default()
+                                .fg(self.theme.border)
+                                .add_modifier(Modifier::BOLD),
+                        )
+                        .title("Description")
+                        .dim(dim),
+                );
 
             let mut p_state = self.paragraph_state.get();
 
@@ -406,6 +427,7 @@ impl Component for TodoListComponent {
                 let scrollbar = Scrollbar::new(
                     p_state.height() + (data_chunks[0].height - 2),
                     p_state.scroll().y,
+                    self.theme.scrollbar,
                 );
                 f.render_widget(scrollbar, data_chunks[0])
             }
@@ -419,13 +441,33 @@ impl Component for TodoListComponent {
                 ]);
                 list_items.push(ListItem::new(spans));
             }
-            let metadata_list =
-                List::new(list_items).block(utils::default_block("Metadata").dim(dim));
+            let metadata_list = List::new(list_items).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(
+                        Style::default()
+                            .fg(self.theme.border)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                    .title("Metadata")
+                    .dim(dim),
+            );
             f.render_widget(metadata_list, data_chunks[1]);
         } else {
-            let placeholder1 =
-                Paragraph::new("").block(utils::default_block("Description").dim(dim));
-            let placeholder2 = Paragraph::new("").block(utils::default_block("Metadata").dim(dim));
+            let placeholder1 = Paragraph::new("").block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(self.theme.border))
+                    .title("Description")
+                    .dim(dim),
+            );
+            let placeholder2 = Paragraph::new("").block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(self.theme.border))
+                    .title("Metadata")
+                    .dim(dim),
+            );
             f.render_widget(placeholder1, data_chunks[0]);
             f.render_widget(placeholder2, data_chunks[1]);
         }

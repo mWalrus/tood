@@ -17,6 +17,7 @@ use tui_utils::{component::Component, keys::key_match, rect::centered_rect};
 use crate::{
     app::{AppMessage, AppState},
     keys::keymap::SharedKeyList,
+    theme::theme::SharedTheme,
 };
 
 use super::{
@@ -33,6 +34,7 @@ pub struct TodoInputComponent {
     pub is_editing_existing: bool,
     todo_index: usize,
     keys: SharedKeyList,
+    theme: SharedTheme,
 }
 
 impl From<TodoInputComponent> for Todo {
@@ -55,7 +57,7 @@ impl From<TodoInputComponent> for Todo {
 }
 
 impl TodoInputComponent {
-    pub fn new(keys: SharedKeyList) -> Self {
+    pub fn new(keys: SharedKeyList, theme: SharedTheme) -> Self {
         Self {
             name: Input::default(),
             description: String::default(),
@@ -64,6 +66,7 @@ impl TodoInputComponent {
             is_editing_existing: false,
             todo_index: 0,
             keys,
+            theme,
         }
     }
 
@@ -109,14 +112,19 @@ impl Component for TodoInputComponent {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Blue))
+                    .border_style(Style::default().fg(self.theme.border))
                     .title("Name"),
             );
 
         let width = chunks[1].width.max(3) - 3;
         let desc_input = Paragraph::new(&*self.description)
             .wrap(tui::widgets::Wrap { trim: true })
-            .block(utils::default_block("Description"));
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(self.theme.border))
+                    .title("Description"),
+            );
 
         f.render_widget(Clear, chunks[0]);
         f.render_widget(Clear, chunks[1]);

@@ -1,12 +1,14 @@
 mod app;
 mod components;
 mod keys;
+mod theme;
 mod ui;
 mod widgets;
 
 use app::App;
 use keys::ToodKeyList;
 use std::{error::Error, time::Duration};
+use theme::ToodTheme;
 
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
@@ -19,7 +21,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _profiler = dhat::Profiler::new_heap();
 
     let keys = ToodKeyList::init();
-    let app = App::new(keys);
+    let theme = ToodTheme::init();
+    let app = App::new(keys, theme);
 
     let res = ui::run(app);
 

@@ -1,19 +1,20 @@
 use tui::{
     layout::Rect,
-    style::Style,
+    style::{Color, Style},
     symbols::{block::FULL, line::VERTICAL},
     widgets::Widget,
 };
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct Scrollbar {
     max: u16,
     pos: u16,
+    color: Color,
 }
 
 impl Scrollbar {
-    pub fn new(max: u16, pos: u16) -> Self {
-        Self { max, pos }
+    pub fn new(max: u16, pos: u16, color: Color) -> Self {
+        Self { max, pos, color }
     }
 }
 
@@ -49,11 +50,6 @@ impl Widget for Scrollbar {
 
         let pos = (pos as u16).saturating_sub(1);
 
-        buf.set_string(
-            right,
-            bar_top + pos,
-            FULL,
-            Style::default().fg(tui::style::Color::Blue),
-        )
+        buf.set_string(right, bar_top + pos, FULL, Style::default().fg(self.color))
     }
 }

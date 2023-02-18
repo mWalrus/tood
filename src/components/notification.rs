@@ -10,17 +10,20 @@ use tui::{
     Frame,
 };
 
+use crate::theme::theme::SharedTheme;
 use crate::EVENT_TIMEOUT;
 use tui_utils::component::Component;
 
 pub struct NotificationComponent {
     pub msg: Arc<Mutex<Option<FlashMsg>>>,
+    theme: SharedTheme,
 }
 
 impl NotificationComponent {
-    pub fn new() -> Self {
+    pub fn new(theme: SharedTheme) -> Self {
         Self {
             msg: Arc::new(Mutex::new(None)),
+            theme,
         }
     }
 
@@ -52,21 +55,22 @@ impl Component for NotificationComponent {
                 MsgType::Error => Span::styled(
                     &msg.message,
                     Style::default()
-                        .bg(Color::LightRed)
+                        .bg(self.theme.flash_err_bg)
+                        .fg(self.theme.flash_err_fg)
                         .add_modifier(Modifier::BOLD),
                 ),
                 MsgType::Warn => Span::styled(
                     &msg.message,
                     Style::default()
-                        .bg(Color::Yellow)
-                        .fg(Color::Black)
+                        .bg(self.theme.flash_warn_bg)
+                        .fg(self.theme.flash_warn_fg)
                         .add_modifier(Modifier::BOLD),
                 ),
                 MsgType::Info => Span::styled(
                     &msg.message,
                     Style::default()
-                        .bg(Color::Green)
-                        .fg(Color::Black)
+                        .bg(self.theme.flash_info_bg)
+                        .fg(self.theme.flash_info_fg)
                         .add_modifier(Modifier::BOLD),
                 ),
             };

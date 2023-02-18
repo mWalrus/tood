@@ -8,7 +8,7 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Style},
-    widgets::Clear,
+    widgets::{Block, Borders, Clear},
     Frame,
 };
 use tui_utils::{component::Component, keys::key_match};
@@ -16,6 +16,7 @@ use tui_utils::{component::Component, keys::key_match};
 use crate::{
     app::{AppMessage, AppState},
     keys::keymap::SharedKeyList,
+    theme::theme::SharedTheme,
     widgets::{
         calendar::{Calendar, CalendarState},
         time_picker::{TimePicker, TimePickerState},
@@ -31,6 +32,7 @@ pub struct DueDateComponent {
     pub time_picker_state: TimePickerState,
     focused_widget: DueDateWidgetHasFocus,
     keys: SharedKeyList,
+    theme: SharedTheme,
     flash_tx: Sender<FlashMsg>,
 }
 
@@ -40,7 +42,7 @@ enum DueDateWidgetHasFocus {
 }
 
 impl DueDateComponent {
-    pub fn new(keys: SharedKeyList, flash_tx: Sender<FlashMsg>) -> Self {
+    pub fn new(keys: SharedKeyList, theme: SharedTheme, flash_tx: Sender<FlashMsg>) -> Self {
         let calendar = Calendar::default();
 
         let (day, num_days) = if let Some(month) = calendar.current_month() {
@@ -56,6 +58,7 @@ impl DueDateComponent {
             time_picker_state: TimePickerState::with_current_time(),
             focused_widget: DueDateWidgetHasFocus::Cal,
             keys,
+            theme,
             flash_tx,
         }
     }
@@ -119,19 +122,27 @@ impl Component for DueDateComponent {
         f.render_widget(Clear, calendar_rect);
         f.render_widget(Clear, picker_rect);
 
-        let cal_block = utils::default_block("Calendar");
-        let time_block = utils::default_block("Time picker");
+        let cal_block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(self.theme.border))
+            .title("Calendar");
+        let time_block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(self.theme.border))
+            .title("Time picker");
 
         match self.focused_widget {
             DueDateWidgetHasFocus::Cal => {
-                self.calendar
-                    .block(cal_block.border_style(Style::default().fg(Color::Blue)));
+                self.calendar.block(
+                    cal_block.border_style(Style::default().fg(self.theme.move_mode_border)),
+                );
                 self.time_picker.block(time_block);
             }
             DueDateWidgetHasFocus::Time => {
                 self.calendar.block(cal_block);
-                self.time_picker
-                    .block(time_block.border_style(Style::default().fg(Color::Blue)));
+                self.time_picker.block(
+                    time_block.border_style(Style::default().fg(self.theme.move_mode_border)),
+                );
             }
         }
 

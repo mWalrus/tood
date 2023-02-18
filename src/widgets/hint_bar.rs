@@ -5,7 +5,7 @@ use tui::{
     widgets::Widget,
 };
 
-use crate::keys::keymap::SharedKeyList;
+use crate::{keys::keymap::SharedKeyList, theme::theme::SharedTheme};
 
 #[repr(usize)]
 pub enum BarType {
@@ -18,6 +18,7 @@ pub enum BarType {
 
 pub struct HintBar {
     hints: Vec<Hint>,
+    theme: SharedTheme,
 }
 
 pub struct Hint {
@@ -38,7 +39,7 @@ impl Hint {
 }
 
 impl HintBar {
-    pub fn normal_mode(keys: SharedKeyList) -> Self {
+    pub fn normal_mode(keys: SharedKeyList, theme: SharedTheme) -> Self {
         let hints = vec![
             Hint {
                 name: "Up",
@@ -85,9 +86,9 @@ impl HintBar {
                 bind: keys.quit.to_string(),
             },
         ];
-        Self { hints }
+        Self { hints, theme }
     }
-    pub fn edit_mode(keys: SharedKeyList) -> Self {
+    pub fn edit_mode(keys: SharedKeyList, theme: SharedTheme) -> Self {
         let hints = vec![
             Hint {
                 name: "Back",
@@ -110,9 +111,9 @@ impl HintBar {
                 bind: keys.submit.to_string(),
             },
         ];
-        Self { hints }
+        Self { hints, theme }
     }
-    pub fn find_mode(keys: SharedKeyList) -> Self {
+    pub fn find_mode(keys: SharedKeyList, theme: SharedTheme) -> Self {
         let hints = vec![
             Hint {
                 name: "Back",
@@ -131,10 +132,10 @@ impl HintBar {
                 bind: keys.submit.to_string(),
             },
         ];
-        Self { hints }
+        Self { hints, theme }
     }
 
-    pub fn move_mode(keys: SharedKeyList) -> Self {
+    pub fn move_mode(keys: SharedKeyList, theme: SharedTheme) -> Self {
         let hints = vec![
             Hint {
                 name: "Save",
@@ -149,10 +150,10 @@ impl HintBar {
                 bind: keys.move_down.to_string(),
             },
         ];
-        Self { hints }
+        Self { hints, theme }
     }
 
-    pub fn due_date_mode(keys: SharedKeyList) -> Self {
+    pub fn due_date_mode(keys: SharedKeyList, theme: SharedTheme) -> Self {
         let hints = vec![
             Hint {
                 name: "Select",
@@ -187,7 +188,7 @@ impl HintBar {
                 bind: keys.alt_move_left.to_string(),
             },
         ];
-        Self { hints }
+        Self { hints, theme }
     }
 
     pub fn height_required(&self, width: u16, height: u16) -> u16 {
@@ -229,8 +230,8 @@ impl Widget for &HintBar {
                 offset_y,
                 String::from(hint),
                 Style::default()
-                    .bg(Color::Blue)
-                    .fg(Color::Black)
+                    .bg(self.theme.key_hint_bg)
+                    .fg(self.theme.key_hint_fg)
                     .add_modifier(Modifier::BOLD),
             );
             offset_x += hl + 1;

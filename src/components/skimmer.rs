@@ -20,6 +20,7 @@ use tui_utils::LIST_HIGHLIGHT_SYMBOL;
 
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
+use crate::theme::theme::SharedTheme;
 
 use super::todo_list::Todo;
 use super::utils;
@@ -41,6 +42,7 @@ pub struct SkimmerComponent {
     pub input: Input,
     pub matches: Vec<SkimMatch>,
     keys: SharedKeyList,
+    theme: SharedTheme,
     matcher: Box<SkimMatcherV2>,
 }
 
@@ -56,12 +58,13 @@ impl From<(usize, &Todo)> for SkimMatch {
 }
 
 impl SkimmerComponent {
-    pub fn new(keys: SharedKeyList) -> Self {
+    pub fn new(keys: SharedKeyList, theme: SharedTheme) -> Self {
         Self {
             state: BoundedState::default(),
             input: Input::default(),
             matches: Vec::new(),
             keys,
+            theme,
             matcher: Box::<SkimMatcherV2>::default(),
         }
     }
@@ -133,7 +136,7 @@ impl Component for SkimmerComponent {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Blue))
+                    .border_style(Style::default().fg(self.theme.border))
                     .title("Name"),
             );
 
@@ -149,7 +152,7 @@ impl Component for SkimmerComponent {
                         spans.push(Span::styled(
                             c.to_string(),
                             Style::default()
-                                .fg(Color::Blue)
+                                .fg(self.theme.selected_fg)
                                 .add_modifier(Modifier::BOLD),
                         ));
                     } else {
@@ -162,8 +165,13 @@ impl Component for SkimmerComponent {
             .collect();
 
         let items = List::new(list_items)
-            .block(utils::default_block("Todos"))
-            .highlight_style(tui_utils::style::highlight_style())
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(self.theme.border))
+                    .title("Todos"),
+            )
+            .highlight_style(Style::default().bg(self.theme.selected_bg))
             .highlight_symbol(LIST_HIGHLIGHT_SYMBOL);
         f.render_widget(Clear, chunks[0]);
         f.render_widget(Clear, chunks[1]);
