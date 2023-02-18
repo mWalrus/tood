@@ -9,7 +9,7 @@
 - [x] Keyboard driven navigation (VIM binds currently)
 - [x] Context based keybind hint bar (bottom of screen)
 - [x] Configurable keybinds
-- [ ] Scroll through todo description
+- [x] Scroll through todo description
 
 ## Todo Manipulation
 - [x] Create
@@ -29,7 +29,7 @@
 - [x] Clear coloring
 - [x] Flash messages communicating action outcomes
 - [x] Hint bar height adjustment when width is too small to fit it
-- [ ] Style component holding the coloring for different components
+- [x] Style component holding the coloring for different components
 - [x] Gray out borders of background view when rendering modals
 
 ## Fuzzy finder
