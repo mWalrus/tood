@@ -4,12 +4,13 @@ use tui::{
     layout::Rect,
     style::Style,
     text::{StyledGrapheme, Text},
-    widgets::{Block, StatefulWidget, Widget, Wrap},
+    widgets::{Block, StatefulWidget, Widget},
 };
 use unicode_width::UnicodeWidthStr;
 
 use super::text::{LineComposer, WordWrapper};
 
+#[allow(dead_code)]
 pub enum ScrollSelection {
     Up,
     Down,
@@ -39,14 +40,6 @@ pub struct ParagraphState {
 }
 
 impl ParagraphState {
-    pub fn new(pos: ScrollPos, lines: u16, height: u16) -> Self {
-        Self {
-            scroll: pos,
-            lines,
-            height,
-        }
-    }
-
     pub const fn lines(self) -> u16 {
         self.lines
     }
@@ -118,10 +111,10 @@ impl<'a> StatefulWidget for StatefulParagraph<'a> {
                 }))
         });
 
-        let mut line_composer = Box::new(WordWrapper::new(&mut styled, text_area.width, true));
+        let mut line_composer = Box::new(WordWrapper::new(&mut styled, text_area.width));
         let mut y = 0;
         let mut end_reached = false;
-        while let Some((current_line, current_line_width)) = line_composer.next_line() {
+        while let Some((current_line, _)) = line_composer.next_line() {
             if !end_reached && y >= state.scroll.y {
                 let mut x = 0;
                 for StyledGrapheme { symbol, style } in current_line {

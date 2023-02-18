@@ -4,7 +4,7 @@ use std::thread;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::Span,
     widgets::{Block, Borders, Paragraph},
     Frame,

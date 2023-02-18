@@ -3,7 +3,6 @@ use std::rc::Rc;
 use confy::ConfyError;
 use serde::{Deserialize, Serialize};
 use tui::style::Color;
-use tui_utils::keys::Shared;
 
 use super::theme::ToodTheme;
 

@@ -769,7 +769,6 @@ dependencies = [
  "tui",
  "tui-input",
  "tui-utils",
- "unicode-segmentation",
  "unicode-width",
 ]
 

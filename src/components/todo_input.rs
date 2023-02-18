@@ -6,7 +6,7 @@ use crossterm::event::{Event, KeyEvent};
 use tui::{
     backend::Backend,
     layout::{Constraint, Layout},
-    style::{Color, Style},
+    style::Style,
     widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
@@ -20,10 +20,7 @@ use crate::{
     theme::theme::SharedTheme,
 };
 
-use super::{
-    todo_list::{ListAction, Todo, TodoMetadata},
-    utils,
-};
+use super::todo_list::{ListAction, Todo, TodoMetadata};
 
 #[derive(Clone)]
 pub struct TodoInputComponent {

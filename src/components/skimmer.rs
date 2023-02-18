@@ -6,7 +6,7 @@ use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
-use tui::style::{Color, Modifier, Style};
+use tui::style::{Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
 use tui::Frame;
@@ -23,7 +23,6 @@ use crate::keys::keymap::SharedKeyList;
 use crate::theme::theme::SharedTheme;
 
 use super::todo_list::Todo;
-use super::utils;
 
 pub enum SkimmerAction {
     Skim,

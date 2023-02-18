@@ -64,10 +64,9 @@ impl Default for ToodKeyList {
 
 impl ToodKeyList {
     pub fn init() -> SharedKeyList {
-        if let Ok(cfg) = KeyConfig::read_from_file() {
-            cfg.to_shared_list()
-        } else {
-            Self::shared()
+        match KeyConfig::read_from_file() {
+            Ok(cfg) => cfg.to_shared_list(),
+            Err(_) => Self::shared(),
         }
     }
 }

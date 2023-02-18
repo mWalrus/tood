@@ -62,7 +62,7 @@ impl ToodTheme {
     pub fn init() -> SharedTheme {
         match ThemeConfig::read_from_file() {
             Ok(theme) => theme.to_shared(),
-            Err(e) => Self::shared(),
+            Err(_) => Self::shared(),
         }
     }
 }

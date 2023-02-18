@@ -9,7 +9,7 @@ use kanal::Sender;
 use serde::{Deserialize, Serialize};
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
-use tui::style::{Color, Modifier, Style};
+use tui::style::{Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use tui::Frame;
@@ -17,11 +17,9 @@ use tui_utils::blocks::Dim;
 use tui_utils::component::Component;
 use tui_utils::keys::key_match;
 use tui_utils::state::{Boundary, BoundedState, StateWrap};
-use tui_utils::style::highlight_style;
 use tui_utils::LIST_HIGHLIGHT_SYMBOL;
 
 use super::notification::FlashMsg;
-use super::utils;
 use crate::app::{AppMessage, AppState};
 use crate::keys::keymap::SharedKeyList;
 use crate::theme::theme::SharedTheme;
@@ -231,7 +229,7 @@ impl TodoListComponent {
     }
 
     pub fn scroll_desc(&self, nav: ScrollSelection) -> bool {
-        let mut state = self.paragraph_state.get();
+        let state = self.paragraph_state.get();
 
         let new_scroll_pos = match nav {
             ScrollSelection::Up => state.scroll().y.saturating_sub(1),
@@ -248,7 +246,6 @@ impl TodoListComponent {
                 .scroll()
                 .y
                 .saturating_add(state.height().saturating_sub(2)),
-            _ => state.scroll().y,
         };
 
         self.set_scroll_desc(new_scroll_pos)
@@ -383,15 +380,11 @@ impl Component for TodoListComponent {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .border_style(
-                        Style::default()
-                            .fg(self.theme.border)
-                            .add_modifier(Modifier::BOLD),
-                    )
+                    .border_style(border_style)
                     .title("Todos")
                     .dim(dim),
             )
-            .highlight_style(Style::default().bg(self.theme.selected_bg))
+            .highlight_style(highlight_style)
             .highlight_symbol(LIST_HIGHLIGHT_SYMBOL);
         f.render_stateful_widget(items, chunks[0], self.list_state.inner_mut());
 

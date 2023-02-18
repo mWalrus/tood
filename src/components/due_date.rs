@@ -7,7 +7,7 @@ use kanal::Sender;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Style},
+    style::Style,
     widgets::{Block, Borders, Clear},
     Frame,
 };
