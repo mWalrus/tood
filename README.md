@@ -23,5 +23,24 @@ Change movement keys to VIM-like bindings:
   move_right: Some(( code: Char('l'), modifiers: ( bits: 0,),)),
 )
 ```
-
 All modifiable keybinds can be found [here](https://github.com/mWalrus/tood/blob/main/src/keys/key_config.rs#L7).
+
+### Configurable theme
+You can configure the theme of the application to whatever you'd like
+using the same method as for the keybinds above.
+
+Tood has a default theme it loads unless you modify `~/.config/tood/theme.ron` like so:
+```ron
+// you can use an already defined color
+(
+  scrollbar: Some(Magenta)
+)
+```
+
+```ron
+// or you can define your own with rgb
+(
+  scrollbar: Some(Rgb(161, 38, 255))
+)
+```
+All modifiable theme options can be found [here](https://github.com/mWalrus/tood/blob/main/src/keys/theme.rs#L11).
