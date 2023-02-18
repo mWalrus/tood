@@ -4,6 +4,8 @@ use confy::ConfyError;
 use serde::{Deserialize, Serialize};
 use tui::style::Color;
 
+use crate::config::Config;
+
 use super::theme::ToodTheme;
 
 #[derive(Deserialize, Serialize, Default, Debug)]
@@ -29,9 +31,15 @@ pub struct ThemeConfig {
     pub flash_err_bg: Option<Color>,
 }
 
+impl Config for ThemeConfig {}
+
 impl ThemeConfig {
-    pub fn read_from_file() -> Result<Self, ConfyError> {
-        confy::load("tood", Some("theme"))
+    pub fn read_from_file() -> Result<Option<Self>, ConfyError> {
+        match confy::load("tood", Some("theme")) {
+            Ok(cfg) => Ok(Some(cfg)),
+            Err(_) if Self::file_is_empty("theme")? => Ok(None),
+            Err(e) => Err(e),
+        }
     }
 
     #[allow(clippy::wrong_self_convention)]

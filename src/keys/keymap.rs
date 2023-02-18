@@ -1,10 +1,11 @@
-use std::rc::Rc;
-
+use super::key_config::KeyConfig;
+use crate::components::notification::FlashMsg;
 use crossterm::event::{KeyCode, KeyModifiers};
+use kanal::Sender;
+use std::rc::Rc;
 use tui_utils::keys::Keybind;
 use tui_utils::shared::Shared;
 
-use super::key_config::KeyConfig;
 pub type SharedKeyList = Rc<ToodKeyList>;
 
 #[derive(Debug, Shared)]
@@ -64,10 +65,15 @@ impl Default for ToodKeyList {
 }
 
 impl ToodKeyList {
-    pub fn init() -> SharedKeyList {
+    pub fn init(tx: Sender<FlashMsg>) -> SharedKeyList {
         match KeyConfig::read_from_file() {
-            Ok(cfg) => cfg.to_shared_list(),
-            Err(_) => Self::shared(),
+            Ok(Some(cfg)) => cfg.to_shared_list(),
+            Ok(None) => Self::shared(),
+            Err(e) => {
+                tx.send(FlashMsg::err(format!("Failed to load key config: {e}")))
+                    .unwrap();
+                Self::shared()
+            }
         }
     }
 }

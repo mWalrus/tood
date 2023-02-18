@@ -1,10 +1,11 @@
-use std::rc::Rc;
-
-use serde::{Deserialize, Serialize};
-use tui::style::Color;
-use tui_utils::shared::Shared;
+use crate::components::notification::FlashMsg;
 
 use super::theme_config::ThemeConfig;
+use kanal::Sender;
+use serde::{Deserialize, Serialize};
+use std::rc::Rc;
+use tui::style::Color;
+use tui_utils::shared::Shared;
 
 pub type SharedTheme = Rc<ToodTheme>;
 
@@ -59,10 +60,15 @@ impl Default for ToodTheme {
 }
 
 impl ToodTheme {
-    pub fn init() -> SharedTheme {
+    pub fn init(tx: Sender<FlashMsg>) -> SharedTheme {
         match ThemeConfig::read_from_file() {
-            Ok(theme) => theme.to_shared(),
-            Err(_) => Self::shared(),
+            Ok(Some(theme)) => theme.to_shared(),
+            Ok(None) => Self::shared(),
+            Err(e) => {
+                tx.send(FlashMsg::err(format!("Failed to load theme: {e}")))
+                    .unwrap();
+                Self::shared()
+            }
         }
     }
 }

@@ -6,7 +6,9 @@ use crate::components::skimmer::SkimmerAction;
 use crate::components::todo_list::ListAction;
 use crate::components::TodoInputComponent;
 use crate::keys::keymap::SharedKeyList;
+use crate::keys::ToodKeyList;
 use crate::theme::theme::SharedTheme;
+use crate::theme::ToodTheme;
 use crate::widgets::hint_bar::BarType;
 use anyhow::Result;
 use chrono::NaiveDateTime;
@@ -48,8 +50,10 @@ pub enum AppState {
 }
 
 impl App {
-    pub fn new(keys: SharedKeyList, theme: SharedTheme) -> App {
+    pub fn new() -> App {
         let (sender, receiver) = unbounded::<FlashMsg>();
+        let keys = ToodKeyList::init(sender.clone());
+        let theme = ToodTheme::init(sender.clone());
         App {
             todo_list: TodoListComponent::load(keys.clone(), theme.clone(), sender.clone()),
             todo_input: TodoInputComponent::new(keys.clone(), theme.clone()),

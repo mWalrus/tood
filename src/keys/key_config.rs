@@ -4,6 +4,8 @@ use confy::ConfyError;
 use serde::{Deserialize, Serialize};
 use tui_utils::keys::Keybind;
 
+use crate::config::Config;
+
 use super::keymap::ToodKeyList;
 
 #[derive(Deserialize, Serialize, Default, Debug)]
@@ -32,9 +34,15 @@ pub struct KeyConfig {
     pub quit: Option<Keybind>,
 }
 
+impl Config for KeyConfig {}
+
 impl KeyConfig {
-    pub fn read_from_file() -> Result<Self, ConfyError> {
-        confy::load("tood", Some("key-config"))
+    pub fn read_from_file() -> Result<Option<Self>, ConfyError> {
+        match confy::load("tood", Some("key-config")) {
+            Ok(cfg) => Ok(Some(cfg)),
+            Err(_) if Self::file_is_empty("key-config")? => Ok(None),
+            Err(e) => Err(e),
+        }
     }
 
     #[allow(clippy::wrong_self_convention)]

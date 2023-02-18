@@ -99,7 +99,7 @@ pub struct FlashMsg {
     pub level: MsgType,
 }
 
-#[derive(Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum MsgType {
     Error,
     Warn,
