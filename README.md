@@ -3,6 +3,10 @@
 ![Demo](./media/demo.gif)
 
 ## Install
+### Pre-built binaries
+Head [here](https://github.com/mWalrus/tood/releases) to grab a pre-built binary for your system.
+
+### Manual steps
 1. `git clone https://github.com/mWalrus/tood.git`
 2. `cd tood`
 3. `make all`
