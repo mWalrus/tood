@@ -30,10 +30,20 @@ impl NotificationComponent {
     pub fn flash(&mut self, msg: FlashMsg) {
         let msg_clone = self.msg.clone();
         thread::spawn(move || {
+            let level = msg.level.clone();
+
             if let Ok(mut m) = msg_clone.lock() {
                 *m = Some(msg);
             }
-            thread::sleep(EVENT_TIMEOUT);
+
+            let timeout = if level == MsgType::Error {
+                EVENT_TIMEOUT * 2
+            } else {
+                EVENT_TIMEOUT
+            };
+
+            thread::sleep(timeout);
+
             if let Ok(mut m) = msg_clone.lock() {
                 *m = None;
             }
