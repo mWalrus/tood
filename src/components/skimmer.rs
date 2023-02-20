@@ -89,7 +89,7 @@ impl SkimmerComponent {
                 self.matches.push(m);
             }
         }
-        self.matches.sort_by(|a, b| a.score.cmp(&b.score));
+        self.matches.sort_by(|a, b| b.score.cmp(&a.score));
         self.state.update_boundary_from_vec(&self.matches);
 
         if self.matches.is_empty() {
