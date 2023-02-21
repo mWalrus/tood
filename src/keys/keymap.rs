@@ -1,5 +1,6 @@
 use super::key_config::KeyConfig;
 use crate::components::notification::FlashMsg;
+use crate::config::Config;
 use crossterm::event::{KeyCode, KeyModifiers};
 use kanal::Sender;
 use std::rc::Rc;
@@ -66,8 +67,8 @@ impl Default for ToodKeyList {
 
 impl ToodKeyList {
     pub fn init(tx: Sender<FlashMsg>) -> SharedKeyList {
-        match KeyConfig::read_from_file() {
-            Ok(Some(cfg)) => cfg.to_shared_list(),
+        match KeyConfig::read_from_file("key-config") {
+            Ok(Some(cfg)) => cfg.to_shared(),
             Ok(None) => Self::shared(),
             Err(e) => {
                 tx.send(FlashMsg::err(format!("Failed to load key config: {e}")))

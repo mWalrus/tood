@@ -1,6 +1,5 @@
 use super::keymap::ToodKeyList;
 use crate::config::Config;
-use confy::ConfyError;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use tui_utils::keys::Keybind;
@@ -31,44 +30,36 @@ pub struct KeyConfig {
     pub quit: Option<Keybind>,
 }
 
-impl Config for KeyConfig {}
+impl Config for KeyConfig {
+    type Item = ToodKeyList;
 
-impl KeyConfig {
-    pub fn read_from_file() -> Result<Option<Self>, ConfyError> {
-        match confy::load("tood", Some("key-config")) {
-            Ok(cfg) => Ok(Some(cfg)),
-            Err(_) if Self::file_is_empty("key-config")? => Ok(None),
-            Err(e) => Err(e),
-        }
-    }
-
-    #[allow(clippy::wrong_self_convention)]
-    pub fn to_shared_list(self) -> Rc<ToodKeyList> {
+    fn to_shared(self) -> Rc<ToodKeyList> {
         let dkl = ToodKeyList::default();
 
+        #[rustfmt::skip]
         let list = ToodKeyList {
-            move_up: self.move_up.unwrap_or(dkl.move_up),
-            move_down: self.move_down.unwrap_or(dkl.move_down),
-            move_left: self.move_left.unwrap_or(dkl.move_left),
-            move_right: self.move_right.unwrap_or(dkl.move_right),
-            alt_move_up: self.alt_move_up.unwrap_or(dkl.alt_move_up),
-            alt_move_down: self.alt_move_down.unwrap_or(dkl.alt_move_down),
-            alt_move_left: self.alt_move_left.unwrap_or(dkl.alt_move_left),
-            alt_move_right: self.alt_move_right.unwrap_or(dkl.alt_move_right),
-            toggle_completed: self.toggle_completed.unwrap_or(dkl.toggle_completed),
-            add_todo: self.add_todo.unwrap_or(dkl.add_todo),
-            external_editor: self.external_editor.unwrap_or(dkl.external_editor),
-            edit_todo: self.edit_todo.unwrap_or(dkl.edit_todo),
-            open_calendar: self.open_calendar.unwrap_or(dkl.open_calendar),
-            remove_todo: self.remove_todo.unwrap_or(dkl.remove_todo),
-            mark_recurring: self.mark_recurring.unwrap_or(dkl.mark_recurring),
-            desc_scroll_up: self.desc_scroll_up.unwrap_or(dkl.desc_scroll_up),
-            desc_scroll_down: self.desc_scroll_down.unwrap_or(dkl.desc_scroll_down),
-            submit: self.submit.unwrap_or(dkl.submit),
-            find_mode: self.find_mode.unwrap_or(dkl.find_mode),
-            move_mode: self.move_mode.unwrap_or(dkl.move_mode),
-            back: self.back.unwrap_or(dkl.back),
-            quit: self.quit.unwrap_or(dkl.quit),
+            move_up:           either!(self.move_up,          dkl.move_up),
+            move_down:         either!(self.move_down,        dkl.move_down),
+            move_left:         either!(self.move_left,        dkl.move_left),
+            move_right:        either!(self.move_right,       dkl.move_right),
+            alt_move_up:       either!(self.alt_move_up,      dkl.alt_move_up),
+            alt_move_down:     either!(self.alt_move_down,    dkl.alt_move_down),
+            alt_move_left:     either!(self.alt_move_left,    dkl.alt_move_left),
+            alt_move_right:    either!(self.alt_move_right,   dkl.alt_move_right),
+            toggle_completed:  either!(self.toggle_completed, dkl.toggle_completed),
+            add_todo:          either!(self.add_todo,         dkl.add_todo),
+            external_editor:   either!(self.external_editor,  dkl.external_editor),
+            edit_todo:         either!(self.edit_todo,        dkl.edit_todo),
+            open_calendar:     either!(self.open_calendar,    dkl.open_calendar),
+            remove_todo:       either!(self.remove_todo,      dkl.remove_todo),
+            mark_recurring:    either!(self.mark_recurring,   dkl.mark_recurring),
+            desc_scroll_up:    either!(self.desc_scroll_up,   dkl.desc_scroll_up),
+            desc_scroll_down:  either!(self.desc_scroll_down, dkl.desc_scroll_down),
+            submit:            either!(self.submit,           dkl.submit),
+            find_mode:         either!(self.find_mode,        dkl.find_mode),
+            move_mode:         either!(self.move_mode,        dkl.move_mode),
+            back:              either!(self.back,             dkl.back),
+            quit:              either!(self.quit,             dkl.quit),
         };
         Rc::new(list)
     }

@@ -1,5 +1,6 @@
 mod app;
 mod components;
+#[macro_use]
 mod config;
 mod keys;
 mod theme;

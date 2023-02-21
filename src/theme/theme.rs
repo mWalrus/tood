@@ -1,5 +1,5 @@
 use super::theme_config::ThemeConfig;
-use crate::components::notification::FlashMsg;
+use crate::{components::notification::FlashMsg, config::Config};
 use kanal::Sender;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
@@ -60,7 +60,7 @@ impl Default for ToodTheme {
 
 impl ToodTheme {
     pub fn init(tx: Sender<FlashMsg>) -> SharedTheme {
-        match ThemeConfig::read_from_file() {
+        match ThemeConfig::read_from_file("theme") {
             Ok(Some(theme)) => theme.to_shared(),
             Ok(None) => Self::shared(),
             Err(e) => {
