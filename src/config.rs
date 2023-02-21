@@ -1,6 +1,5 @@
-use std::fs::File;
-
 use confy::ConfyError;
+use std::fs::File;
 
 pub trait Config {
     fn file_is_empty(file_name: &str) -> Result<bool, ConfyError> {
