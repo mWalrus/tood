@@ -1,12 +1,9 @@
-use std::rc::Rc;
-
+use super::keymap::ToodKeyList;
+use crate::config::Config;
 use confy::ConfyError;
 use serde::{Deserialize, Serialize};
+use std::rc::Rc;
 use tui_utils::keys::Keybind;
-
-use crate::config::Config;
-
-use super::keymap::ToodKeyList;
 
 #[derive(Deserialize, Serialize, Default, Debug)]
 pub struct KeyConfig {

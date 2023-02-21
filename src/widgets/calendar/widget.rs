@@ -1,3 +1,5 @@
+use super::{month::MONTH_COUNT, CalendarState, Month};
+use crate::components::utils;
 use chrono::{Datelike, Local, NaiveDate};
 use tui::{
     buffer::Buffer,
@@ -6,9 +8,6 @@ use tui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 use tui_utils::style::highlight_style;
-
-use super::{month::MONTH_COUNT, CalendarState, Month};
-use crate::components::utils;
 
 #[derive(Debug, Clone)]
 pub struct Calendar {

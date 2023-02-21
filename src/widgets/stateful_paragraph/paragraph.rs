@@ -1,3 +1,4 @@
+use super::text::{LineComposer, WordWrapper};
 use std::iter;
 use tui::{
     buffer::Buffer,
@@ -7,8 +8,6 @@ use tui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 use unicode_width::UnicodeWidthStr;
-
-use super::text::{LineComposer, WordWrapper};
 
 #[allow(dead_code)]
 pub enum ScrollSelection {

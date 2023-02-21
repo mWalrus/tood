@@ -1,11 +1,10 @@
+use crate::{keys::keymap::SharedKeyList, theme::theme::SharedTheme};
 use tui::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},
     widgets::Widget,
 };
-
-use crate::{keys::keymap::SharedKeyList, theme::theme::SharedTheme};
 
 #[repr(usize)]
 pub enum BarType {

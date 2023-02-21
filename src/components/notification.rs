@@ -1,6 +1,7 @@
+use crate::theme::theme::SharedTheme;
+use crate::EVENT_TIMEOUT;
 use std::sync::{Arc, Mutex};
 use std::thread;
-
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -9,9 +10,6 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
-
-use crate::theme::theme::SharedTheme;
-use crate::EVENT_TIMEOUT;
 use tui_utils::component::Component;
 
 pub struct NotificationComponent {

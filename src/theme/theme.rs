@@ -1,6 +1,5 @@
-use crate::components::notification::FlashMsg;
-
 use super::theme_config::ThemeConfig;
+use crate::components::notification::FlashMsg;
 use kanal::Sender;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;

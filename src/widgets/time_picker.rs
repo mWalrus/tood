@@ -1,3 +1,4 @@
+use crate::components::utils;
 use chrono::{Local, Timelike};
 use tui::{
     buffer::Buffer,
@@ -6,8 +7,6 @@ use tui::{
     widgets::{Block, StatefulWidget, Widget},
 };
 use tui_utils::style::highlight_style;
-
-use crate::components::utils;
 
 struct PickerFocusState(PickerFocus);
 

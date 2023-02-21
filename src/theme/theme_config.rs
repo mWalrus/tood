@@ -1,12 +1,9 @@
-use std::rc::Rc;
-
+use super::theme::ToodTheme;
+use crate::config::Config;
 use confy::ConfyError;
 use serde::{Deserialize, Serialize};
+use std::rc::Rc;
 use tui::style::Color;
-
-use crate::config::Config;
-
-use super::theme::ToodTheme;
 
 #[derive(Deserialize, Serialize, Default, Debug)]
 pub struct ThemeConfig {

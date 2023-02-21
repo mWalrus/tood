@@ -1,9 +1,8 @@
-use std::error::Error;
-
 use anyhow::Result;
 use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use crossterm::event::KeyEvent;
 use kanal::Sender;
+use std::error::Error;
 use tui::{
     backend::Backend,
     layout::Rect,

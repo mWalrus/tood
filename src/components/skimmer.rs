@@ -1,9 +1,12 @@
-use std::error::Error;
-
+use super::todo_list::Todo;
+use crate::app::{AppMessage, AppState};
+use crate::keys::keymap::SharedKeyList;
+use crate::theme::theme::SharedTheme;
 use anyhow::Result;
 use crossterm::event::{Event, KeyEvent};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
+use std::error::Error;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Modifier, Style};
@@ -17,12 +20,6 @@ use tui_utils::keys::key_match;
 use tui_utils::rect::centered_rect;
 use tui_utils::state::BoundedState;
 use tui_utils::LIST_HIGHLIGHT_SYMBOL;
-
-use crate::app::{AppMessage, AppState};
-use crate::keys::keymap::SharedKeyList;
-use crate::theme::theme::SharedTheme;
-
-use super::todo_list::Todo;
 
 pub enum SkimmerAction {
     Skim,

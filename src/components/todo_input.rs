@@ -1,8 +1,13 @@
-use std::error::Error;
-
+use super::todo_list::{ListAction, Todo, TodoMetadata};
+use crate::{
+    app::{AppMessage, AppState},
+    keys::keymap::SharedKeyList,
+    theme::theme::SharedTheme,
+};
 use anyhow::Result;
 use chrono::{Local, NaiveDateTime};
 use crossterm::event::{Event, KeyEvent};
+use std::error::Error;
 use tui::{
     backend::Backend,
     layout::{Constraint, Layout},
@@ -13,14 +18,6 @@ use tui::{
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 use tui_utils::{component::Component, keys::key_match, rect::centered_rect};
-
-use crate::{
-    app::{AppMessage, AppState},
-    keys::keymap::SharedKeyList,
-    theme::theme::SharedTheme,
-};
-
-use super::todo_list::{ListAction, Todo, TodoMetadata};
 
 #[derive(Clone)]
 pub struct TodoInputComponent {

@@ -1,12 +1,19 @@
-use std::cell::Cell;
-use std::error::Error;
-use std::io;
-
+use super::notification::FlashMsg;
+use crate::app::{AppMessage, AppState};
+use crate::keys::keymap::SharedKeyList;
+use crate::theme::theme::SharedTheme;
+use crate::widgets::hint_bar::{BarType, HintBar};
+use crate::widgets::scrollbar::Scrollbar;
+use crate::widgets::stateful_paragraph::paragraph::ScrollSelection;
+use crate::widgets::stateful_paragraph::{ParagraphState, ScrollPos, StatefulParagraph};
 use anyhow::Result;
 use chrono::{DateTime, Local, NaiveDateTime};
 use crossterm::event::KeyEvent;
 use kanal::Sender;
 use serde::{Deserialize, Serialize};
+use std::cell::Cell;
+use std::error::Error;
+use std::io;
 use tui::backend::Backend;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Modifier, Style};
@@ -18,15 +25,6 @@ use tui_utils::component::Component;
 use tui_utils::keys::key_match;
 use tui_utils::state::{Boundary, BoundedState, StateWrap};
 use tui_utils::LIST_HIGHLIGHT_SYMBOL;
-
-use super::notification::FlashMsg;
-use crate::app::{AppMessage, AppState};
-use crate::keys::keymap::SharedKeyList;
-use crate::theme::theme::SharedTheme;
-use crate::widgets::hint_bar::{BarType, HintBar};
-use crate::widgets::scrollbar::Scrollbar;
-use crate::widgets::stateful_paragraph::paragraph::ScrollSelection;
-use crate::widgets::stateful_paragraph::{ParagraphState, ScrollPos, StatefulParagraph};
 
 static TIME_FORMAT: &str = "%D %-I:%M %P";
 
