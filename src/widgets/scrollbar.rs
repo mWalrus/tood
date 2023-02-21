@@ -1,7 +1,7 @@
 use tui::{
     layout::Rect,
     style::{Color, Style},
-    symbols::{block::FULL, line::VERTICAL},
+    symbols::{block::FULL, line::DOUBLE_VERTICAL},
     widgets::Widget,
 };
 
@@ -41,8 +41,11 @@ impl Widget for Scrollbar {
             (scrollbar_area.top(), scrollbar_area.height)
         };
 
+        // the max should be the entire height of the content within the area.
+        //
+
         for y in bar_top..(bar_top + bar_height) {
-            buf.set_string(right, y, VERTICAL, Style::default());
+            buf.set_string(right, y, DOUBLE_VERTICAL, Style::default());
         }
         let progress = f32::from(self.pos) / f32::from(self.max);
         let progress = if progress > 1.0 { 1.0 } else { progress };

@@ -418,7 +418,9 @@ impl Component for TodoListComponent {
 
             if p_state.lines() > data_chunks[0].height {
                 let scrollbar = Scrollbar::new(
-                    p_state.height() + (data_chunks[0].height - 2),
+                    p_state
+                        .lines()
+                        .saturating_sub(p_state.height().saturating_sub(2)),
                     p_state.scroll().y,
                     self.theme.scrollbar,
                 );
