@@ -42,9 +42,3 @@ pub trait Config {
     #[allow(clippy::wrong_self_convention)]
     fn to_shared(self) -> Rc<Self::Item>;
 }
-
-macro_rules! either {
-    ($opt: expr, $def: expr) => {
-        $opt.unwrap_or($def)
-    };
-}
