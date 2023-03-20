@@ -10,16 +10,16 @@ use anyhow::Result;
 use chrono::{DateTime, Local, NaiveDateTime};
 use crossterm::event::KeyEvent;
 use kanal::Sender;
+use ratatui::backend::Backend;
+use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Span, Spans};
+use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use ratatui::Frame;
 use serde::{Deserialize, Serialize};
 use std::cell::Cell;
 use std::error::Error;
 use std::io;
-use tui::backend::Backend;
-use tui::layout::{Constraint, Layout};
-use tui::style::{Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
-use tui::Frame;
 use tui_utils::blocks::Dim;
 use tui_utils::component::Component;
 use tui_utils::keys::key_match;
@@ -320,7 +320,7 @@ impl Component for TodoListComponent {
         let size = f.size();
         let hintbar = &self.hintbars.items[self.hintbars.selected];
         let chunks = Layout::default()
-            .direction(tui::layout::Direction::Vertical)
+            .direction(Direction::Vertical)
             .constraints(
                 [
                     Constraint::Percentage(60),
@@ -387,7 +387,7 @@ impl Component for TodoListComponent {
         f.render_stateful_widget(items, chunks[0], self.list_state.inner_mut());
 
         let data_chunks = Layout::default()
-            .direction(tui::layout::Direction::Horizontal)
+            .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(70), Constraint::Min(30)].as_ref())
             .split(chunks[1]);
 

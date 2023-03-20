@@ -1,5 +1,6 @@
-use tui::{
-    layout::Rect,
+use ratatui::{
+    buffer::Buffer as TUIBuffer,
+    layout::{Margin, Rect},
     style::{Color, Style},
     symbols::{block::FULL, line::DOUBLE_VERTICAL},
     widgets::Widget,
@@ -19,7 +20,7 @@ impl Scrollbar {
 }
 
 impl Widget for Scrollbar {
-    fn render(self, area: Rect, buf: &mut tui::buffer::Buffer) {
+    fn render(self, area: Rect, buf: &mut TUIBuffer) {
         if area.height < 2 {
             return;
         }
@@ -34,7 +35,7 @@ impl Widget for Scrollbar {
         }
 
         let (bar_top, bar_height) = {
-            let scrollbar_area = area.inner(&tui::layout::Margin {
+            let scrollbar_area = area.inner(&Margin {
                 horizontal: 0,
                 vertical: 1,
             });

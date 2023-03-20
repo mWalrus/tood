@@ -1,8 +1,7 @@
 use crate::app::{App, AppMessage, AppState};
 use crossterm::event::Event;
+use ratatui::{backend::Backend, Frame};
 use std::error::Error;
-use tui::backend::Backend;
-use tui::Frame;
 use tui_utils::{component::Component, term};
 
 pub fn run(mut app: App) -> TerminalResult<()> {

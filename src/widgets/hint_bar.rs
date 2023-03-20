@@ -1,5 +1,5 @@
 use crate::{keys::keymap::SharedKeyList, theme::theme::SharedTheme};
-use tui::{
+use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},

@@ -2,14 +2,14 @@ use anyhow::Result;
 use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use crossterm::event::KeyEvent;
 use kanal::Sender;
-use std::error::Error;
-use tui::{
+use ratatui::{
     backend::Backend,
     layout::Rect,
     style::Style,
     widgets::{Block, Borders, Clear},
     Frame,
 };
+use std::error::Error;
 use tui_utils::{component::Component, keys::key_match};
 
 use crate::{
