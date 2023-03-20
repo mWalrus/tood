@@ -1,8 +1,8 @@
 use super::{month::MONTH_COUNT, CalendarState, Month};
 use crate::components::utils;
 use chrono::{Datelike, Local, NaiveDate};
-use tui::{
-    buffer::Buffer,
+use ratatui::{
+    buffer::Buffer as TUIBuffer,
     layout::Rect,
     style::{Color, Modifier, Style},
     widgets::{Block, StatefulWidget, Widget},
@@ -78,7 +78,7 @@ impl Calendar {
 
 impl StatefulWidget for Calendar {
     type State = CalendarState;
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+    fn render(self, area: Rect, buf: &mut TUIBuffer, state: &mut Self::State) {
         let month_i = state.selected_month;
 
         let (header, padding, num_days) = {

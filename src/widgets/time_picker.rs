@@ -1,6 +1,6 @@
 use crate::components::utils;
 use chrono::{Local, Timelike};
-use tui::{
+use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},

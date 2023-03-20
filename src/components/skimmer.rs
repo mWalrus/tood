@@ -6,13 +6,13 @@ use anyhow::Result;
 use crossterm::event::{Event, KeyEvent};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
+use ratatui::backend::Backend;
+use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Span, Spans};
+use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
+use ratatui::Frame;
 use std::error::Error;
-use tui::backend::Backend;
-use tui::layout::{Constraint, Layout};
-use tui::style::{Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
-use tui::Frame;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 use tui_utils::component::Component;
@@ -120,7 +120,7 @@ impl Component for SkimmerComponent {
         let rect = centered_rect(f.size());
 
         let chunks = Layout::default()
-            .direction(tui::layout::Direction::Vertical)
+            .direction(Direction::Vertical)
             .constraints([Constraint::Length(3), Constraint::Max(10)].as_ref())
             .split(rect);
 

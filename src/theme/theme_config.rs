@@ -1,8 +1,8 @@
 use super::theme::ToodTheme;
 use crate::config::Config;
+use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
-use tui::style::Color;
 
 #[derive(Deserialize, Serialize, Default, Debug)]
 pub struct ThemeConfig {

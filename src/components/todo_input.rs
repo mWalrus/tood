@@ -7,14 +7,14 @@ use crate::{
 use anyhow::Result;
 use chrono::{Local, NaiveDateTime};
 use crossterm::event::{Event, KeyEvent};
-use std::error::Error;
-use tui::{
+use ratatui::{
     backend::Backend,
-    layout::{Constraint, Layout},
+    layout::{Constraint, Direction, Layout},
     style::Style,
-    widgets::{Block, Borders, Clear, Paragraph},
+    widgets::{Block, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
+use std::error::Error;
 use tui_input::backend::crossterm as input_backend;
 use tui_input::Input;
 use tui_utils::{component::Component, keys::key_match, rect::centered_rect};
@@ -94,7 +94,7 @@ impl Component for TodoInputComponent {
         let rect = centered_rect(f.size());
 
         let chunks = Layout::default()
-            .direction(tui::layout::Direction::Vertical)
+            .direction(Direction::Vertical)
             .constraints([Constraint::Length(3), Constraint::Max(10)].as_ref())
             .split(rect);
 
@@ -112,7 +112,7 @@ impl Component for TodoInputComponent {
 
         let width = chunks[1].width.max(3) - 3;
         let desc_input = Paragraph::new(&*self.description)
-            .wrap(tui::widgets::Wrap { trim: true })
+            .wrap(Wrap { trim: true })
             .block(
                 Block::default()
                     .borders(Borders::ALL)

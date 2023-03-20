@@ -1,4 +1,4 @@
-use tui::text::StyledGrapheme;
+use ratatui::text::StyledGrapheme;
 use unicode_width::UnicodeWidthStr;
 
 const NBSP: &str = "\u{00a0}";

@@ -1,12 +1,12 @@
 use super::text::{LineComposer, WordWrapper};
-use std::iter;
-use tui::{
+use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
     text::{StyledGrapheme, Text},
     widgets::{Block, StatefulWidget, Widget},
 };
+use std::iter;
 use unicode_width::UnicodeWidthStr;
 
 #[allow(dead_code)]

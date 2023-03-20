@@ -1,9 +1,9 @@
 use super::theme_config::ThemeConfig;
 use crate::{components::notification::FlashMsg, config::Config};
 use kanal::Sender;
+use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
-use tui::style::Color;
 use tui_utils::shared::Shared;
 
 pub type SharedTheme = Rc<ToodTheme>;
